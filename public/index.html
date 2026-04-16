@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stadium Status Workplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #0c1d53;
+      --navy-hover: #0f2460;
+      --navy-deep:  #091540;
+      --bg:         #eef1f8;
+      --card:       #ffffff;
+      --border:     #d8deec;
+      --text:       #0c1d53;
+      --muted:      #5f6e8f;
+      --success:    #166534;
+      --danger:     #b91c1c;
+      --danger-bg:  #fef2f2;
+      --shadow:     0 1px 4px rgba(12,29,83,.08), 0 1px 2px rgba(12,29,83,.05);
+      --shadow-md:  0 4px 16px rgba(12,29,83,.12);
+      --shadow-lg:  0 12px 36px rgba(12,29,83,.18);
+      --radius:     10px;
+      --radius-lg:  14px;
+    }
+
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* ─── Login ─────────────────────────────────────────────────────── */
+    #login-screen {
+      position: fixed; inset: 0;
+      background: var(--navy);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      transition: opacity .25s;
+    }
+    #login-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .login-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 52px 48px 48px;
+      width: 440px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-mark {
+      width: 52px; height: 52px;
+      background: var(--navy);
+      border-radius: var(--radius);
+      margin-bottom: 28px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-mark svg { width: 24px; height: 24px; }
+
+    .login-card h1 {
+      font-size: 26px; font-weight: 700;
+      letter-spacing: -.025em;
+      margin-bottom: 8px;
+    }
+    .login-card > p {
+      color: var(--muted); font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    .user-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .user-btn {
+      display: flex; align-items: center; gap: 18px;
+      padding: 18px 20px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card); cursor: pointer;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+      text-align: left; width: 100%; font-family: inherit;
+    }
+    .user-btn:hover { border-color: var(--navy); background: #f7f9ff; box-shadow: var(--shadow); }
+    .user-btn:active { background: #eff2fc; }
+
+    .user-av {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: var(--navy); color: white;
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .user-btn-info { display: flex; flex-direction: column; gap: 3px; }
+    .user-btn-name { font-size: 16px; font-weight: 600; color: var(--text); }
+    .user-btn-label { font-size: 13px; color: var(--muted); }
+
+    /* ─── App shell ─────────────────────────────────────────────────── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+    #app.visible { display: flex; }
+
+    header {
+      background: var(--navy); height: 68px;
+      padding: 0 36px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      color: white; font-size: 17px; font-weight: 700; letter-spacing: -.015em;
+    }
+    .brand-dot {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,.15); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-dot svg { width: 16px; height: 16px; }
+
+    .header-right { display: flex; align-items: center; gap: 18px; }
+
+    .online-pill { display: flex; align-items: center; gap: 9px; }
+    .online-text {
+      font-size: 11px; color: rgba(255,255,255,.5);
+      font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+    }
+    .av-row { display: flex; gap: 5px; }
+    .av-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,.2); color: white;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid rgba(255,255,255,.15);
+    }
+    .you-chip {
+      background: rgba(255,255,255,.15); color: white;
+      font-size: 14px; font-weight: 600;
+      padding: 6px 16px; border-radius: 100px;
+    }
+
+    /* ─── Tab bar ───────────────────────────────────────────────────── */
+    .tab-bar {
+      background: var(--navy); padding: 0 32px;
+      display: flex; border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .tab {
+      height: 52px; padding: 0 24px;
+      background: transparent; border: none;
+      color: rgba(255,255,255,.55);
+      font-size: 15px; font-weight: 500; font-family: inherit;
+      cursor: pointer; position: relative;
+      transition: color .15s; white-space: nowrap;
+    }
+    .tab:hover { color: rgba(255,255,255,.8); }
+    .tab.active { color: white; font-weight: 600; }
+    .tab.active::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0; height: 3px;
+      background: white; border-radius: 3px 3px 0 0;
+    }
+
+    /* ─── Main ──────────────────────────────────────────────────────── */
+    main {
+      flex: 1; padding: 40px 40px;
+      max-width: 1400px; margin: 0 auto; width: 100%;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Panel header ──────────────────────────────────────────────── */
+    .panel-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; margin-bottom: 28px;
+    }
+    .panel-title { font-size: 26px; font-weight: 700; letter-spacing: -.025em; }
+    .panel-desc  { font-size: 15px; color: var(--muted); margin-top: 4px; }
+    .count-badge {
+      background: var(--navy); color: white;
+      font-size: 14px; font-weight: 700;
+      padding: 6px 14px; border-radius: 100px;
+    }
+
+    /* ─── Add card ──────────────────────────────────────────────────── */
+    .add-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .add-top-row { margin-bottom: 16px; }
+    .add-top-row input {
+      width: 100%;
+      padding: 15px 18px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 17px; font-family: inherit;
+      color: var(--text); background: var(--bg);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .add-top-row input::placeholder { color: var(--muted); }
+    .add-top-row input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(12,29,83,.1);
+      background: var(--card);
+    }
+    .add-meta {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Category pills */
+    .cat-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+    .cat-pill {
+      padding: 8px 15px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px; background: var(--card);
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      font-family: inherit; color: var(--muted);
+      transition: all .15s;
+    }
+    .cat-pill:hover { border-color: var(--navy); color: var(--navy); }
+    .cat-pill.sel[data-cat="Create Short"]   { background: #fef3c7; border-color: #d97706; color: #92400e; }
+    .cat-pill.sel[data-cat="Edit Short"]     { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+    .cat-pill.sel[data-cat="Create Graphic"] { background: #dcfce7; border-color: #16a34a; color: #166534; }
+    .cat-pill.sel[data-cat="Edit Long Form"] { background: #dbeafe; border-color: #2563eb; color: #1e40af; }
+
+    /* Urgent toggle */
+    .urgent-toggle {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 15px;
+      border: 1.5px solid var(--border); border-radius: 100px;
+      background: var(--card); cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      font-family: inherit; color: var(--muted);
+      transition: all .15s;
+    }
+    .urgent-toggle .ut-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+    .urgent-toggle:hover { border-color: var(--danger); color: var(--danger); }
+    .urgent-toggle.on { background: #fee2e2; border-color: var(--danger); color: var(--danger); }
+
+    /* Assign wrapper */
+    .assign-wrap {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; color: var(--muted); font-weight: 500;
+      margin-left: 4px;
+    }
+    .assign-wrap select {
+      padding: 8px 32px 8px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; font-family: inherit;
+      color: var(--text); background: var(--card);
+      outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235f6e8f' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .assign-wrap select:focus { border-color: var(--navy); }
+    .assign-wrap label { white-space: nowrap; }
+
+    .btn-primary {
+      padding: 14px 30px;
+      background: var(--navy); color: white; border: none;
+      border-radius: var(--radius);
+      font-size: 15px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .15s; white-space: nowrap;
+    }
+    .btn-primary:hover { background: var(--navy-hover); }
+    .btn-primary:active { background: var(--navy-deep); }
+    .add-meta .btn-primary { margin-left: auto; }
+
+    /* ─── Task list ─────────────────────────────────────────────────── */
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .empty {
+      padding: 64px 32px; text-align: center;
+      background: var(--card);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .empty-desc  { font-size: 15px; color: var(--muted); }
+
+    .task-item {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: var(--shadow);
+      transition: box-shadow .15s, border-color .15s;
+      animation: slideDown .18s ease;
+      position: relative;
+    }
+    .task-item:hover { box-shadow: var(--shadow-md); }
+    .task-item.done { opacity: .55; }
+    .task-item.urgent {
+      border-color: var(--danger);
+      border-left-width: 4px;
+      background: #fffafa;
+    }
+    .task-item.new { animation: highlightPop .4s ease; }
+
+    /* Category tint backgrounds — kept subtle so text/badges stay readable */
+    .task-item.cat-create-short   { background: #fffbeb; }
+    .task-item.cat-edit-short     { background: #fff5f5; }
+    .task-item.cat-create-graphic { background: #f0fdf4; }
+    .task-item.cat-edit-long-form { background: #eff6ff; }
+    /* Urgent always wins over category tint */
+    .task-item.urgent.cat-create-short,
+    .task-item.urgent.cat-edit-short,
+    .task-item.urgent.cat-create-graphic,
+    .task-item.urgent.cat-edit-long-form { background: #fffafa; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes highlightPop {
+      0%   { background: #dfe6ff; }
+      100% { background: var(--card); }
+    }
+
+    .task-check {
+      width: 24px; height: 24px; border-radius: 7px;
+      border: 2px solid var(--border);
+      flex-shrink: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .task-check:hover { border-color: var(--navy); }
+    .task-check.checked {
+      background: var(--success); border-color: var(--success);
+    }
+    .task-check.checked::after {
+      content: '';
+      width: 12px; height: 7px;
+      border-left: 2.5px solid white;
+      border-bottom: 2.5px solid white;
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+
+    .task-text {
+      flex: 1; font-size: 16px; line-height: 1.45;
+      word-break: break-word;
+    }
+    .task-item.done .task-text { text-decoration: line-through; color: var(--muted); }
+
+    /* Category badge on task */
+    .cat-badge {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      padding: 4px 11px; border-radius: 100px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .cat-badge.create-short   { background: #fef3c7; color: #92400e; }
+    .cat-badge.edit-short     { background: #fee2e2; color: #991b1b; }
+    .cat-badge.create-graphic { background: #dcfce7; color: #166534; }
+    .cat-badge.edit-longform  { background: #dbeafe; color: #1e40af; }
+
+    /* Urgent badge on task */
+    .urgent-badge {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      padding: 4px 11px; border-radius: 100px;
+      background: #fee2e2; color: var(--danger);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .task-by {
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      background: var(--bg); padding: 4px 12px;
+      border-radius: 100px; white-space: nowrap;
+    }
+
+    /* Task action buttons (edit + delete) */
+    .task-actions {
+      display: flex; gap: 4px; flex-shrink: 0;
+      opacity: 0; transition: opacity .15s;
+    }
+    .task-item:hover .task-actions { opacity: 1; }
+
+    .task-action-btn {
+      width: 34px; height: 34px; border: none;
+      background: transparent; cursor: pointer;
+      border-radius: 8px; color: var(--muted);
+      font-size: 14px; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .task-action-btn:hover { background: var(--bg); color: var(--text); }
+    .task-action-btn.del:hover { background: var(--danger-bg); color: var(--danger); }
+    .task-action-btn svg { width: 15px; height: 15px; pointer-events: none; }
+
+    /* ─── Inline edit mode ──────────────────────────────────────────── */
+    .task-item.editing {
+      background: #f7f9ff;
+      border-color: var(--navy);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .edit-input {
+      flex: 1; min-width: 200px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--navy);
+      border-radius: 8px;
+      font-size: 16px; font-family: inherit;
+      color: var(--text); outline: none; background: white;
+    }
+    .edit-controls {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .edit-urgent-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      border: 1.5px solid var(--border); border-radius: 100px;
+      background: white; cursor: pointer;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      color: var(--muted); transition: all .15s;
+    }
+    .edit-urgent-btn .ut-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .edit-urgent-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .edit-urgent-btn.on { background: #fee2e2; border-color: var(--danger); color: var(--danger); }
+
+    .edit-save-btn {
+      padding: 10px 20px;
+      background: var(--navy); color: white; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: background .15s;
+    }
+    .edit-save-btn:hover { background: var(--navy-hover); }
+    .edit-cancel-btn {
+      padding: 9px 16px;
+      background: transparent; color: var(--muted);
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; font-family: inherit; cursor: pointer;
+      transition: all .15s;
+    }
+    .edit-cancel-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ─── Schedule ──────────────────────────────────────────────────── */
+    .schedule-week { margin-bottom: 36px; }
+    .week-heading {
+      font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 12px;
+    }
+
+    /* Vertical stacked day layout */
+    .day-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .day-cell {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow .15s;
+      min-height: 64px;
+    }
+    .day-cell:hover { box-shadow: var(--shadow-md); }
+    .day-cell.is-today { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(12,29,83,.12); }
+
+    .day-top {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      width: 62px; flex-shrink: 0;
+      gap: 2px;
+    }
+    .day-dow {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    }
+    .day-num { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+    .day-cell.is-today .day-num {
+      background: var(--navy); color: white;
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
+    .day-divider {
+      width: 1px; height: 36px; background: var(--border); flex-shrink: 0;
+    }
+
+    .day-items {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
+      align-content: flex-start;
+    }
+
+    /* Category group within a day row */
+    .day-cat-group {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .day-cat-label {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .day-cat-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .day-cat-sep {
+      width: 1px; height: 22px;
+      background: var(--border); flex-shrink: 0; align-self: center;
+      margin: 0 2px;
+    }
+
+    .sched-item {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      animation: slideDown .15s ease;
+      white-space: nowrap;
+    }
+    /* Type tints for schedule pills */
+    .sched-item.type-shorts    { background: #eff6ff; border-color: #bfdbfe; }
+    .sched-item.type-longform  { background: #f5f3ff; border-color: #ddd6fe; }
+    .sched-item.type-graphics  { background: #f0fdf4; border-color: #bbf7d0; }
+    .sched-item.type-meetings  { background: #fff7ed; border-color: #fed7aa; }
+    .sched-item.type-shoots    { background: #fdf4ff; border-color: #e9d5ff; }
+    .type-badge {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      padding: 2px 7px; border-radius: 100px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .type-badge.shorts    { background: #eff6ff; color: #1e40af; }
+    .type-badge.longform  { background: #f5f3ff; color: #4c1d95; }
+    .type-badge.graphics  { background: #f0fdf4; color: #166534; }
+    .type-badge.meetings  { background: #fff7ed; color: #c2410c; }
+    .type-badge.shoots    { background: #fdf4ff; color: #86198f; }
+    .sched-text { font-size: 13px; line-height: 1.4; color: var(--text); }
+    .sched-item { cursor: pointer; }
+    .sched-del, .sched-edit {
+      width: 16px; height: 16px; border: none; background: transparent;
+      cursor: pointer; color: var(--muted); font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .15s, color .15s;
+      flex-shrink: 0; border-radius: 3px; padding: 0; line-height: 1;
+    }
+    .sched-item:hover .sched-del,
+    .sched-item:hover .sched-edit { opacity: 1; }
+    .sched-del:hover  { color: var(--danger); }
+    .sched-edit:hover { color: var(--navy); }
+    .sched-edit svg { width: 11px; height: 11px; pointer-events: none; }
+
+    /* Member initials badge on schedule pills */
+    .sched-member {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--navy); color: white;
+      font-size: 10px; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; letter-spacing: -.01em;
+    }
+    /* Per-person badge colors */
+    .sched-member.person-jack  { background: #ede9fe; color: #5b21b6; }
+    .sched-member.person-joe   { background: #fef3c7; color: #92400e; }
+    .sched-member.person-becca { background: #dbeafe; color: #1e3a8a; }
+
+    /* Member toggles in modal */
+    .member-row { display: flex; gap: 10px; margin-bottom: 28px; }
+    .member-toggle {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--card);
+      cursor: pointer; font-size: 11px; font-weight: 700; font-family: inherit;
+      color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .member-toggle:hover { border-color: var(--navy); color: var(--navy); }
+    /* Per-person selected state */
+    .member-toggle.on[data-member="Jack"],
+    .member-toggle.on[data-person="Jack"]  { background: #ede9fe; border-color: #7c3aed; color: #5b21b6; }
+    .member-toggle.on[data-member="Joe"],
+    .member-toggle.on[data-person="Joe"]   { background: #fef3c7; border-color: #d97706; color: #92400e; }
+    .member-toggle.on[data-member="Becca"],
+    .member-toggle.on[data-person="Becca"] { background: #dbeafe; border-color: #2563eb; color: #1e3a8a; }
+
+    .add-day-btn {
+      flex-shrink: 0;
+      padding: 7px 14px;
+      border: 1.5px dashed var(--border); border-radius: 100px;
+      background: transparent; cursor: pointer;
+      color: var(--muted); font-size: 13px; font-family: inherit;
+      transition: border-color .15s, color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .add-day-btn:hover { border-color: var(--navy); color: var(--navy); background: #f7f9ff; }
+
+    /* ─── Schedule modal ────────────────────────────────────────────── */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(12,29,83,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-bg.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--card); border-radius: var(--radius-lg);
+      padding: 40px; width: 480px; box-shadow: var(--shadow-lg);
+      transform: translateY(10px); transition: transform .2s;
+    }
+    .modal-bg.open .modal { transform: translateY(0); }
+
+    .modal-title { font-size: 20px; font-weight: 700; letter-spacing: -.015em; margin-bottom: 4px; }
+    .modal-sub   { font-size: 14px; color: var(--muted); margin-bottom: 26px; }
+
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: .07em; margin-bottom: 9px;
+    }
+    .modal-input {
+      display: block; width: 100%;
+      padding: 14px 18px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 16px; font-family: inherit;
+      color: var(--text); outline: none; margin-bottom: 22px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .modal-input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(12,29,83,.1); }
+
+    .type-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+    .type-opt {
+      flex: 1; min-width: 80px; padding: 11px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      background: var(--card); cursor: pointer;
+      font-size: 14px; font-weight: 600;
+      font-family: inherit; text-align: center; color: var(--muted);
+      transition: all .15s;
+    }
+    .type-opt:hover { border-color: var(--navy); color: var(--navy); }
+    .type-opt.sel { background: var(--navy); border-color: var(--navy); color: white; }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-ghost {
+      padding: 12px 22px; background: transparent; color: var(--muted);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 15px; font-weight: 500; font-family: inherit; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ─── Toast ─────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--navy); color: white;
+      padding: 12px 26px; border-radius: 100px;
+      font-size: 15px; font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      transition: transform .3s cubic-bezier(.175,.885,.32,1.1);
+      z-index: 300; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ─── Shorts Log ────────────────────────────────────────────────── */
+    .notes-input {
+      flex: 1; padding: 10px 16px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 15px; font-family: inherit;
+      color: var(--text); background: var(--bg); outline: none;
+      transition: border-color .15s;
+    }
+    .notes-input:focus { border-color: var(--navy); background: var(--card); }
+    .notes-input::placeholder { color: var(--muted); }
+
+    .short-item {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 22px;
+      display: flex; align-items: flex-start; gap: 14px;
+      box-shadow: var(--shadow);
+      transition: box-shadow .15s;
+      cursor: pointer;
+      animation: slideDown .18s ease;
+    }
+    .short-item:hover { box-shadow: var(--shadow-md); }
+    .short-item.used { opacity: .45; }
+    .short-item.scheduled { border-left: 3px solid #1e40af; }
+
+    .short-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    .short-title { font-size: 16px; font-weight: 500; color: var(--text); line-height: 1.4; }
+    .short-item.used .short-title { text-decoration: line-through; color: var(--muted); }
+    .short-notes { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+    .short-sched-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 2px;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 100px; padding: 3px 10px 3px 8px;
+      width: fit-content;
+    }
+    .short-sched-date { font-size: 12px; font-weight: 600; color: #1e40af; }
+
+    /* Modal textarea + date input */
+    .modal-textarea {
+      display: block; width: 100%;
+      padding: 14px 18px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 15px; font-family: inherit; line-height: 1.5;
+      color: var(--text); outline: none; margin-bottom: 22px;
+      resize: vertical; min-height: 80px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .modal-textarea:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(12,29,83,.1); }
+
+    @media (max-width: 860px) {
+      main { padding: 24px 16px; }
+      header { padding: 0 16px; }
+      .tab-bar { padding: 0 12px; }
+      .day-cell { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-mark">
+      <svg viewBox="0 0 20 20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="10" y="10" width="7" height="7" rx="1"/>
+        <path d="M10 5h7M5 10v7"/>
+      </svg>
+    </div>
+    <h1>Stadium Status Workplace</h1>
+    <p>Select your account to continue</p>
+    <div class="user-list">
+      <button class="user-btn" onclick="login('Jack')">
+        <div class="user-av">JA</div>
+        <div class="user-btn-info">
+          <span class="user-btn-name">Jack</span>
+          <span class="user-btn-label">Team member</span>
+        </div>
+      </button>
+      <button class="user-btn" onclick="login('Joe')">
+        <div class="user-av">JO</div>
+        <div class="user-btn-info">
+          <span class="user-btn-name">Joe</span>
+          <span class="user-btn-label">Team member</span>
+        </div>
+      </button>
+      <button class="user-btn" onclick="login('Becca')">
+        <div class="user-av">BE</div>
+        <div class="user-btn-info">
+          <span class="user-btn-name">Becca</span>
+          <span class="user-btn-label">Team member</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="brand-dot">
+        <svg viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="1" width="4" height="4" rx=".5"/>
+          <rect x="7" y="7" width="4" height="4" rx=".5"/>
+          <path d="M7 3h4M3 7v4"/>
+        </svg>
+      </div>
+      Stadium Status Workplace
+    </div>
+    <div class="header-right">
+      <div class="online-pill">
+        <span class="online-text">Online</span>
+        <div class="av-row" id="av-row"></div>
+      </div>
+      <span class="you-chip" id="you-chip"></span>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="individual" onclick="switchTab('individual')">Individual Tasks</button>
+    <button class="tab"        data-tab="team"       onclick="switchTab('team')">Team Tasks</button>
+    <button class="tab"        data-tab="schedule"   onclick="switchTab('schedule')">Schedule</button>
+    <button class="tab"        data-tab="shorts"     onclick="switchTab('shorts')">Shorts Filmed</button>
+  </div>
+
+  <main>
+
+    <!-- Individual Tasks -->
+    <div class="tab-panel active" id="panel-individual">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="personal-title">My Tasks</div>
+          <div class="panel-desc">Only visible to you</div>
+        </div>
+        <span class="count-badge" id="personal-count">0</span>
+      </div>
+      <form id="personal-form">
+        <div class="add-card">
+          <div class="add-top-row">
+            <input type="text" id="personal-input" placeholder="Add a task..." maxlength="200" autocomplete="off">
+          </div>
+          <div class="add-meta">
+            <div class="cat-pills" id="personal-cats">
+              <button type="button" class="cat-pill sel" data-cat="Create Short"   onclick="selectCat('personal','Create Short')">Create Short</button>
+              <button type="button" class="cat-pill"     data-cat="Edit Short"     onclick="selectCat('personal','Edit Short')">Edit Short</button>
+              <button type="button" class="cat-pill"     data-cat="Create Graphic" onclick="selectCat('personal','Create Graphic')">Create Graphic</button>
+              <button type="button" class="cat-pill"     data-cat="Edit Long Form" onclick="selectCat('personal','Edit Long Form')">Edit Long Form</button>
+            </div>
+            <button type="button" class="urgent-toggle" id="personal-urgent-btn" onclick="toggleUrgent('personal')">
+              <span class="ut-dot"></span> Urgent
+            </button>
+            <div class="assign-wrap" id="personal-assign" style="display:none">
+              <label for="personal-assignee">For</label>
+              <select id="personal-assignee">
+                <option value="Jack">Jack</option>
+                <option value="Joe">Joe</option>
+                <option value="Becca">Becca</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary">Add Task</button>
+          </div>
+        </div>
+      </form>
+      <div class="task-list" id="personal-list"></div>
+    </div>
+
+    <!-- Team Tasks -->
+    <div class="tab-panel" id="panel-team">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Team Tasks</div>
+          <div class="panel-desc">Shared with everyone — editable by all</div>
+        </div>
+        <span class="count-badge" id="team-count">0</span>
+      </div>
+      <form id="team-form">
+        <div class="add-card">
+          <div class="add-top-row">
+            <input type="text" id="team-input" placeholder="Add a team task..." maxlength="200" autocomplete="off">
+          </div>
+          <div class="add-meta">
+            <div class="cat-pills" id="team-cats">
+              <button type="button" class="cat-pill sel" data-cat="Create Short"   onclick="selectCat('team','Create Short')">Create Short</button>
+              <button type="button" class="cat-pill"     data-cat="Edit Short"     onclick="selectCat('team','Edit Short')">Edit Short</button>
+              <button type="button" class="cat-pill"     data-cat="Create Graphic" onclick="selectCat('team','Create Graphic')">Create Graphic</button>
+              <button type="button" class="cat-pill"     data-cat="Edit Long Form" onclick="selectCat('team','Edit Long Form')">Edit Long Form</button>
+            </div>
+            <button type="button" class="urgent-toggle" id="team-urgent-btn" onclick="toggleUrgent('team')">
+              <span class="ut-dot"></span> Urgent
+            </button>
+            <button type="submit" class="btn-primary">Add Task</button>
+          </div>
+        </div>
+      </form>
+      <div class="task-list" id="team-list"></div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="tab-panel" id="panel-schedule">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Schedule</div>
+          <div class="panel-desc">Two-week content calendar — editable by all</div>
+        </div>
+      </div>
+      <div id="schedule-weeks"></div>
+    </div>
+
+    <!-- Shorts Filmed -->
+    <div class="tab-panel" id="panel-shorts">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Shorts Filmed</div>
+          <div class="panel-desc">Film log &amp; posting tracker</div>
+        </div>
+        <span class="count-badge" id="shorts-count">0</span>
+      </div>
+      <form id="shorts-form">
+        <div class="add-card">
+          <div class="add-top-row">
+            <input type="text" id="shorts-title-input" placeholder="Short title..." maxlength="200" autocomplete="off">
+          </div>
+          <div class="add-meta">
+            <input type="text" class="notes-input" id="shorts-notes-input" placeholder="Notes (optional)..." maxlength="500" autocomplete="off">
+            <button type="submit" class="btn-primary">Log Short</button>
+          </div>
+        </div>
+      </form>
+      <div class="task-list" id="shorts-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Schedule modal -->
+<div class="modal-bg" id="modal-bg" onclick="handleModalBgClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add Task</div>
+    <div class="modal-sub"   id="modal-sub"></div>
+    <label class="form-label">Task</label>
+    <input class="modal-input" type="text" id="modal-input" placeholder="Describe the task..." maxlength="200" autocomplete="off">
+    <label class="form-label">Type</label>
+    <div class="type-row">
+      <button type="button" class="type-opt sel" data-type="Shorts"    onclick="selectType('Shorts')">Shorts</button>
+      <button type="button" class="type-opt"     data-type="Long Form" onclick="selectType('Long Form')">Long Form</button>
+      <button type="button" class="type-opt"     data-type="Graphics"  onclick="selectType('Graphics')">Graphics</button>
+      <button type="button" class="type-opt"     data-type="Meetings"  onclick="selectType('Meetings')">Meetings</button>
+      <button type="button" class="type-opt"     data-type="Shoots"    onclick="selectType('Shoots')">Shoots</button>
+    </div>
+    <label class="form-label">Tag Members</label>
+    <div class="member-row">
+      <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleMember('Jack')">JW</button>
+      <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleMember('Joe')">JF</button>
+      <button type="button" class="member-toggle" data-member="Becca" onclick="toggleMember('Becca')">BS</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost"   onclick="closeModal()">Cancel</button>
+      <button type="button" class="btn-primary" id="modal-submit-btn" onclick="submitScheduleTask()">Add to Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shorts detail modal -->
+<div class="modal-bg" id="short-modal-bg" onclick="handleShortModalBgClick(event)">
+  <div class="modal">
+    <div class="modal-title">Short Details</div>
+    <label class="form-label">Title</label>
+    <input class="modal-input" type="text" id="short-modal-title-input" placeholder="Short title..." maxlength="200" autocomplete="off">
+    <label class="form-label">Notes</label>
+    <textarea class="modal-textarea" id="short-modal-notes" placeholder="Optional notes..." maxlength="500" rows="3"></textarea>
+    <label class="form-label">Schedule Date</label>
+    <input class="modal-input" type="date" id="short-modal-date" style="margin-bottom:22px">
+    <label class="form-label">Assign To</label>
+    <div class="member-row" id="short-person-row">
+      <button type="button" class="member-toggle" data-person="Jack"  onclick="selectShortPerson('Jack')">JW</button>
+      <button type="button" class="member-toggle" data-person="Joe"   onclick="selectShortPerson('Joe')">JF</button>
+      <button type="button" class="member-toggle" data-person="Becca" onclick="selectShortPerson('Becca')">BS</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost"   onclick="closeShortDetail()">Cancel</button>
+      <button type="button" class="btn-primary" onclick="submitShortDetail()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────
+  let ws           = null;
+  let myName       = '';
+  let myTasks      = [];
+  let sharedTasks  = [];
+  let schedItems   = [];
+  let activeTab    = 'individual';
+  let modalDate       = null;
+  let selectedType    = 'Shorts';
+  let selectedMembers = [];
+  let personalCat    = 'Create Short';
+  let teamCat        = 'Create Short';
+  let personalUrgent = false;
+  let teamUrgent     = false;
+  let editingId      = null;
+  let editingType    = null;
+  let editUrgent     = false;
+  let editingSchedId = null;
+  let shortsLog         = [];
+  let shortDetailId     = null;
+  let selectedShortPerson = null;
+  const prevTeamIds  = new Set();
+
+  // ── Confetti ───────────────────────────────────────────────────────────
+  function launchConfetti(cx, cy) {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999';
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+
+    const colors = ['#0c1d53','#1a3170','#0e2460','#1e3a8a','#2d4fa8','#0f3080'];
+    const particles = Array.from({ length: 72 }, () => ({
+      x:  cx + (Math.random() - 0.5) * 20,
+      y:  cy + (Math.random() - 0.5) * 20,
+      vx: (Math.random() - 0.5) * 14,
+      vy: Math.random() * -13 - 4,
+      w:  Math.random() * 9 + 4,
+      h:  Math.random() * 5 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot:  Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.35,
+      opacity: 1,
+    }));
+
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      for (const p of particles) {
+        p.x  += p.vx;  p.y  += p.vy;
+        p.vy += 0.45;  p.vx *= 0.97;
+        p.rot += p.rotV;
+        p.opacity -= 0.02;
+        if (p.opacity <= 0) continue;
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (alive) requestAnimationFrame(frame);
+      else canvas.remove();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ── Category pills ─────────────────────────────────────────────────────
+  function selectCat(scope, cat) {
+    if (scope === 'personal') {
+      personalCat = cat;
+      document.querySelectorAll('#personal-cats .cat-pill').forEach(p =>
+        p.classList.toggle('sel', p.dataset.cat === cat));
+    } else {
+      teamCat = cat;
+      document.querySelectorAll('#team-cats .cat-pill').forEach(p =>
+        p.classList.toggle('sel', p.dataset.cat === cat));
+    }
+  }
+
+  // ── Urgent toggle (add form) ───────────────────────────────────────────
+  function toggleUrgent(scope) {
+    if (scope === 'personal') {
+      personalUrgent = !personalUrgent;
+      document.getElementById('personal-urgent-btn').classList.toggle('on', personalUrgent);
+    } else {
+      teamUrgent = !teamUrgent;
+      document.getElementById('team-urgent-btn').classList.toggle('on', teamUrgent);
+    }
+  }
+
+  // ── DOM refs ───────────────────────────────────────────────────────────
+  const loginScreen   = document.getElementById('login-screen');
+  const appEl         = document.getElementById('app');
+  const youChip       = document.getElementById('you-chip');
+  const avRow         = document.getElementById('av-row');
+  const personalTitle = document.getElementById('personal-title');
+  const personalCount = document.getElementById('personal-count');
+  const teamCount     = document.getElementById('team-count');
+  const personalList  = document.getElementById('personal-list');
+  const teamList      = document.getElementById('team-list');
+  const schedWeeks    = document.getElementById('schedule-weeks');
+  const modalBg       = document.getElementById('modal-bg');
+  const modalInput    = document.getElementById('modal-input');
+  const toastEl       = document.getElementById('toast');
+
+  // ── Toast ──────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+    if (tab === 'schedule') buildSchedule();
+    if (tab === 'shorts')   renderShorts(shortsLog);
+  }
+
+  // ── Avatars ────────────────────────────────────────────────────────────
+  function renderAvatars(users) {
+    avRow.innerHTML = '';
+    users.forEach(name => {
+      const el = document.createElement('div');
+      el.className = 'av-circle';
+      el.textContent = name[0].toUpperCase();
+      el.title = name;
+      avRow.appendChild(el);
+    });
+  }
+
+  // ── Sort: urgent first ─────────────────────────────────────────────────
+  function sortTasks(tasks) {
+    return [...tasks].sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+  }
+
+  // ── Render personal tasks ──────────────────────────────────────────────
+  function renderPersonal(tasks) {
+    myTasks = tasks;
+    personalCount.textContent = tasks.length;
+    if (!tasks.length) {
+      personalList.innerHTML = '<div class="empty"><div class="empty-title">No tasks yet</div><div class="empty-desc">Add your first task above</div></div>';
+      return;
+    }
+    personalList.innerHTML = '';
+    sortTasks(tasks).forEach(task => personalList.appendChild(makeTaskEl(task, 'personal')));
+  }
+
+  // ── Render team tasks ──────────────────────────────────────────────────
+  function renderTeam(tasks) {
+    const newIds = new Set();
+    tasks.forEach(t => { if (!prevTeamIds.has(t.id)) newIds.add(t.id); });
+    prevTeamIds.clear();
+    tasks.forEach(t => prevTeamIds.add(t.id));
+
+    sharedTasks = tasks;
+    teamCount.textContent = tasks.length;
+    if (!tasks.length) {
+      teamList.innerHTML = '<div class="empty"><div class="empty-title">No team tasks yet</div><div class="empty-desc">Add the first task above</div></div>';
+      return;
+    }
+    teamList.innerHTML = '';
+    sortTasks(tasks).forEach(task => {
+      const el = makeTaskEl(task, 'team');
+      if (newIds.has(task.id)) el.classList.add('new');
+      teamList.appendChild(el);
+    });
+  }
+
+  // ── Build a task element ───────────────────────────────────────────────
+  function makeTaskEl(task, type) {
+    const item = document.createElement('div');
+
+    // ── Edit mode ──────────────────────────────────────────────────────
+    if (task.id === editingId) {
+      item.className = 'task-item editing';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-input';
+      input.value = task.text;
+      input.maxLength = 200;
+
+      const controls = document.createElement('div');
+      controls.className = 'edit-controls';
+
+      const urgBtn = document.createElement('button');
+      urgBtn.type = 'button';
+      urgBtn.className = 'edit-urgent-btn' + (editUrgent ? ' on' : '');
+      urgBtn.innerHTML = '<span class="ut-dot"></span> Urgent';
+      urgBtn.addEventListener('click', () => {
+        editUrgent = !editUrgent;
+        urgBtn.classList.toggle('on', editUrgent);
+      });
+
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'edit-save-btn';
+      saveBtn.textContent = 'Save';
+      saveBtn.addEventListener('click', () => saveEdit(task.id, input.value, type));
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'edit-cancel-btn';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', cancelEdit);
+
+      controls.appendChild(urgBtn);
+      controls.appendChild(saveBtn);
+      controls.appendChild(cancelBtn);
+
+      item.appendChild(input);
+      item.appendChild(controls);
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); saveEdit(task.id, input.value, type); }
+        if (e.key === 'Escape') cancelEdit();
+      });
+      setTimeout(() => { input.focus(); input.select(); }, 20);
+      return item;
+    }
+
+    // ── Normal mode ────────────────────────────────────────────────────
+    const catClass = task.category ? ' cat-' + task.category.toLowerCase().replace(/ /g, '-') : '';
+    item.className = 'task-item' + (task.done ? ' done' : '') + (task.urgent ? ' urgent' : '') + catClass;
+
+    const check = document.createElement('div');
+    check.className = 'task-check' + (task.done ? ' checked' : '');
+    check.addEventListener('click', (e) => {
+      if (!task.done) {
+        const r = e.currentTarget.getBoundingClientRect();
+        launchConfetti(r.left + r.width / 2, r.top + r.height / 2);
+      }
+      send(type === 'personal' ? 'toggle_personal' : 'toggle_team', { id: task.id });
+    });
+    item.appendChild(check);
+
+    if (task.urgent) {
+      const ub = document.createElement('span');
+      ub.className = 'urgent-badge';
+      ub.textContent = 'Urgent';
+      item.appendChild(ub);
+    }
+
+    if (task.category) {
+      const cb = document.createElement('span');
+      cb.className = 'cat-badge ' + task.category.toLowerCase().replace(/ /g, '-');
+      cb.textContent = task.category;
+      item.appendChild(cb);
+    }
+
+    const text = document.createElement('div');
+    text.className = 'task-text';
+    text.textContent = task.text;
+    item.appendChild(text);
+
+    if (type === 'team' && task.by) {
+      const by = document.createElement('span');
+      by.className = 'task-by';
+      by.textContent = task.by;
+      item.appendChild(by);
+    }
+
+    // Action buttons (edit + delete)
+    const actions = document.createElement('div');
+    actions.className = 'task-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'task-action-btn';
+    editBtn.title = 'Edit';
+    editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
+    editBtn.addEventListener('click', () => startEdit(task, type));
+    actions.appendChild(editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'task-action-btn del';
+    delBtn.title = 'Delete';
+    delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
+    delBtn.addEventListener('click', () => send(type === 'personal' ? 'delete_personal' : 'delete_team', { id: task.id }));
+    actions.appendChild(delBtn);
+
+    item.appendChild(actions);
+    return item;
+  }
+
+  // ── Edit helpers ───────────────────────────────────────────────────────
+  function startEdit(task, type) {
+    editingId   = task.id;
+    editingType = type;
+    editUrgent  = !!task.urgent;
+    if (type === 'personal') renderPersonal(myTasks);
+    else                     renderTeam(sharedTasks);
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    if (editingType === 'personal') renderPersonal(myTasks);
+    else                            renderTeam(sharedTasks);
+    editingType = null;
+  }
+
+  function saveEdit(id, newText, type) {
+    newText = newText.trim();
+    if (!newText) return;
+    // Optimistically update local state so the UI responds immediately
+    const arr = type === 'personal' ? myTasks : sharedTasks;
+    const t = arr.find(t => t.id === id);
+    if (t) { t.text = newText; t.urgent = editUrgent; }
+    const msgType = type === 'personal' ? 'edit_personal' : 'edit_team';
+    send(msgType, { id, text: newText, urgent: editUrgent });
+    editingId   = null;
+    editingType = null;
+    // Re-render immediately so the edit form exits without waiting for the server
+    if (type === 'personal') renderPersonal(myTasks);
+    else                     renderTeam(sharedTasks);
+  }
+
+  // ── Schedule ───────────────────────────────────────────────────────────
+  function getMonday(d) {
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const m = new Date(d);
+    m.setDate(d.getDate() + diff);
+    m.setHours(0, 0, 0, 0);
+    return m;
+  }
+
+  function toISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function fmtWeekRange(start) {
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const o = { month: 'short', day: 'numeric' };
+    return start.toLocaleDateString('en-US', o) + ' – ' + end.toLocaleDateString('en-US', { ...o, year: 'numeric' });
+  }
+
+  const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  function buildSchedule() {
+    schedWeeks.innerHTML = '';
+    const today  = toISO(new Date());
+    const monday = getMonday(new Date());
+
+    for (let w = 0; w < 2; w++) {
+      const wStart = new Date(monday);
+      wStart.setDate(monday.getDate() + w * 7);
+
+      const section = document.createElement('div');
+      section.className = 'schedule-week';
+
+      const heading = document.createElement('div');
+      heading.className = 'week-heading';
+      heading.textContent = fmtWeekRange(wStart);
+      section.appendChild(heading);
+
+      const grid = document.createElement('div');
+      grid.className = 'day-grid';
+
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(wStart);
+        date.setDate(wStart.getDate() + d);
+        const iso     = toISO(date);
+        const isToday = iso === today;
+
+        const cell = document.createElement('div');
+        cell.className = 'day-cell' + (isToday ? ' is-today' : '');
+
+        // Day label (left column)
+        const top = document.createElement('div');
+        top.className = 'day-top';
+        const dow = document.createElement('span');
+        dow.className = 'day-dow';
+        dow.textContent = DOW[d];
+        const num = document.createElement('span');
+        num.className = 'day-num';
+        num.textContent = date.getDate();
+        top.appendChild(dow);
+        top.appendChild(num);
+        cell.appendChild(top);
+
+        // Vertical divider
+        const divider = document.createElement('div');
+        divider.className = 'day-divider';
+        cell.appendChild(divider);
+
+        // Tasks area — grouped by category
+        const items = document.createElement('div');
+        items.className = 'day-items';
+        // Merge manual schedule items with shorts that have been assigned this date
+        const dayItems = [
+          ...schedItems.filter(i => i.date === iso),
+          ...shortsLog
+            .filter(s => s.date === iso && s.assignee && !s.used)
+            .map(s => ({ id: s.id, type: 'Shorts', text: s.title, members: [s.assignee], fromShort: true })),
+        ];
+        if (dayItems.length) {
+          const TYPE_ORDER = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'];
+          const CAT_COLORS = {
+            'Shorts':    '#1e40af',
+            'Long Form': '#4c1d95',
+            'Graphics':  '#166534',
+            'Meetings':  '#c2410c',
+            'Shoots':    '#86198f',
+          };
+          let firstGroup = true;
+          TYPE_ORDER.forEach(cat => {
+            const catItems = dayItems.filter(i => i.type === cat);
+            if (!catItems.length) return;
+
+            if (!firstGroup) {
+              const sep = document.createElement('div');
+              sep.className = 'day-cat-sep';
+              items.appendChild(sep);
+            }
+            firstGroup = false;
+
+            const group = document.createElement('div');
+            group.className = 'day-cat-group';
+
+            const label = document.createElement('span');
+            label.className = 'day-cat-label';
+            const dot = document.createElement('span');
+            dot.className = 'day-cat-dot';
+            dot.style.background = CAT_COLORS[cat];
+            label.appendChild(dot);
+            label.appendChild(document.createTextNode(cat));
+            group.appendChild(label);
+
+            catItems.forEach(item => group.appendChild(makeSchedItem(item)));
+            items.appendChild(group);
+          });
+        }
+        cell.appendChild(items);
+
+        // Add button (right side)
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-day-btn';
+        addBtn.textContent = '+ Add';
+        addBtn.addEventListener('click', () => openModal(iso, date));
+        cell.appendChild(addBtn);
+
+        grid.appendChild(cell);
+      }
+
+      section.appendChild(grid);
+      schedWeeks.appendChild(section);
+    }
+  }
+
+  const MEMBER_INITIALS = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+  function personClass(name) { return 'person-' + name.toLowerCase(); }
+
+  function makeSchedItem(item) {
+    const row   = document.createElement('div');
+    const key   = item.type === 'Long Form' ? 'longform' : item.type.toLowerCase();
+    row.className = 'sched-item type-' + key;
+
+    const badge = document.createElement('span');
+    badge.className = 'type-badge ' + key;
+    badge.textContent = item.type;
+    row.appendChild(badge);
+
+    const text  = document.createElement('span');
+    text.className = 'sched-text';
+    text.textContent = item.text;
+    row.appendChild(text);
+
+    // Member initials badges
+    if (item.members && item.members.length) {
+      item.members.forEach(m => {
+        const av = document.createElement('span');
+        av.className = 'sched-member ' + personClass(m);
+        av.textContent = MEMBER_INITIALS[m] || m.slice(0, 2).toUpperCase();
+        av.title = m;
+        row.appendChild(av);
+      });
+    }
+
+    if (item.fromShort) {
+      // Shorts-log derived pill: click opens short detail
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'sched-edit';
+      viewBtn.title = 'View in Shorts log';
+      viewBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2"/><path d="M1.5 7C2.8 4.2 4.7 2.5 7 2.5s4.2 1.7 5.5 4.5c-1.3 2.8-3.2 4.5-5.5 4.5S2.8 9.8 1.5 7z"/></svg>`;
+      viewBtn.addEventListener('click', (e) => { e.stopPropagation(); openShortById(item.id); });
+      row.appendChild(viewBtn);
+      row.addEventListener('click', () => openShortById(item.id));
+    } else {
+      // Regular schedule item: edit + delete
+      const editBtn = document.createElement('button');
+      editBtn.className = 'sched-edit';
+      editBtn.title = 'Edit';
+      editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
+      editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal(item); });
+      row.appendChild(editBtn);
+
+      const del = document.createElement('button');
+      del.className = 'sched-del';
+      del.innerHTML = '&times;';
+      del.title = 'Remove';
+      del.addEventListener('click', (e) => { e.stopPropagation(); send('delete_schedule', { id: item.id }); });
+      row.appendChild(del);
+
+      row.addEventListener('click', () => openEditModal(item));
+    }
+
+    return row;
+  }
+
+  // ── Shorts log ─────────────────────────────────────────────────────────
+  function renderShorts(shorts) {
+    shortsLog = shorts;
+    document.getElementById('shorts-count').textContent = shorts.length;
+    const list = document.getElementById('shorts-list');
+    if (!shorts.length) {
+      list.innerHTML = '<div class="empty"><div class="empty-title">No shorts logged yet</div><div class="empty-desc">Add filmed shorts above to track them</div></div>';
+      return;
+    }
+    list.innerHTML = '';
+    // Unscheduled+unused first, scheduled+unused next, used last
+    const sorted = [...shorts].sort((a, b) => {
+      const score = s => s.used ? 2 : (s.date && s.assignee ? 1 : 0);
+      return score(a) - score(b);
+    });
+    sorted.forEach(s => list.appendChild(makeShortEl(s)));
+  }
+
+  function makeShortEl(short) {
+    const item = document.createElement('div');
+    item.className = 'short-item'
+      + (short.used ? ' used' : '')
+      + (short.date && short.assignee ? ' scheduled' : '');
+
+    // Used checkbox
+    const check = document.createElement('div');
+    check.className = 'task-check' + (short.used ? ' checked' : '');
+    check.title = 'Mark as used / posted';
+    check.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Optimistic toggle
+      short.used = !short.used;
+      const existing = shortsLog.find(s => s.id === short.id);
+      if (existing) existing.used = short.used;
+      send('toggle_short_used', { id: short.id });
+      renderShorts(shortsLog);
+      if (activeTab === 'schedule') buildSchedule();
+    });
+    item.appendChild(check);
+
+    // Content
+    const content = document.createElement('div');
+    content.className = 'short-content';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'short-title';
+    titleEl.textContent = short.title;
+    content.appendChild(titleEl);
+
+    if (short.notes) {
+      const notesEl = document.createElement('div');
+      notesEl.className = 'short-notes';
+      notesEl.textContent = short.notes;
+      content.appendChild(notesEl);
+    }
+
+    if (short.date && short.assignee) {
+      const badge = document.createElement('div');
+      badge.className = 'short-sched-badge';
+      const dateLabel = new Date(short.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'short-sched-date';
+      dateSpan.textContent = dateLabel;
+      const av = document.createElement('span');
+      av.className = 'sched-member ' + personClass(short.assignee);
+      av.textContent = MEMBER_INITIALS[short.assignee] || short.assignee.slice(0, 2).toUpperCase();
+      badge.appendChild(dateSpan);
+      badge.appendChild(av);
+      content.appendChild(badge);
+    }
+
+    item.appendChild(content);
+
+    // Action buttons (delete only, on hover)
+    const actions = document.createElement('div');
+    actions.className = 'task-actions';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'task-action-btn del';
+    delBtn.title = 'Delete';
+    delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
+    delBtn.addEventListener('click', (e) => { e.stopPropagation(); send('delete_short', { id: short.id }); });
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+
+    // Click anywhere → detail modal
+    item.addEventListener('click', () => openShortDetail(short));
+    return item;
+  }
+
+  // ── Shorts detail modal ────────────────────────────────────────────────
+  function openShortDetail(short) {
+    shortDetailId       = short.id;
+    selectedShortPerson = short.assignee || null;
+    document.getElementById('short-modal-title-input').value = short.title;
+    document.getElementById('short-modal-notes').value       = short.notes || '';
+    document.getElementById('short-modal-date').value        = short.date  || '';
+    document.querySelectorAll('#short-person-row .member-toggle').forEach(b =>
+      b.classList.toggle('on', b.dataset.person === selectedShortPerson));
+    document.getElementById('short-modal-bg').classList.add('open');
+    setTimeout(() => document.getElementById('short-modal-title-input').focus(), 50);
+  }
+
+  function openShortById(id) {
+    const short = shortsLog.find(s => s.id === id);
+    if (short) openShortDetail(short);
+  }
+
+  function closeShortDetail() {
+    document.getElementById('short-modal-bg').classList.remove('open');
+    shortDetailId       = null;
+    selectedShortPerson = null;
+  }
+
+  function handleShortModalBgClick(e) {
+    if (e.target === document.getElementById('short-modal-bg')) closeShortDetail();
+  }
+
+  function selectShortPerson(name) {
+    selectedShortPerson = selectedShortPerson === name ? null : name;
+    document.querySelectorAll('#short-person-row .member-toggle').forEach(b =>
+      b.classList.toggle('on', b.dataset.person === selectedShortPerson));
+  }
+
+  function submitShortDetail() {
+    if (!shortDetailId) return;
+    const title    = document.getElementById('short-modal-title-input').value.trim();
+    if (!title) { document.getElementById('short-modal-title-input').focus(); return; }
+    const notes    = document.getElementById('short-modal-notes').value.trim();
+    const date     = document.getElementById('short-modal-date').value || null;
+    const assignee = selectedShortPerson;
+    // Optimistic update
+    const s = shortsLog.find(s => s.id === shortDetailId);
+    if (s) { s.title = title; s.notes = notes; s.date = date; s.assignee = assignee; }
+    send('update_short', { id: shortDetailId, title, notes, date: date || '', assignee: assignee || '' });
+    closeShortDetail();
+    if (activeTab === 'shorts')   renderShorts(shortsLog);
+    if (activeTab === 'schedule') buildSchedule();
+  }
+
+  // ── Schedule modal ─────────────────────────────────────────────────────
+  function openModal(iso, dateObj) {
+    editingSchedId = null;
+    modalDate = iso;
+    const label = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('modal-title').textContent = 'Add Task';
+    document.getElementById('modal-sub').textContent   = label;
+    document.getElementById('modal-submit-btn').textContent = 'Add to Schedule';
+    selectType('Shorts');
+    selectedMembers = [];
+    document.querySelectorAll('.member-toggle').forEach(b => b.classList.remove('on'));
+    modalInput.value = '';
+    modalBg.classList.add('open');
+    setTimeout(() => modalInput.focus(), 50);
+  }
+  function openEditModal(item) {
+    editingSchedId = item.id;
+    modalDate = item.date;
+    document.getElementById('modal-title').textContent = 'Edit Task';
+    document.getElementById('modal-sub').textContent   = '';
+    document.getElementById('modal-submit-btn').textContent = 'Save Changes';
+    selectType(item.type);
+    selectedMembers = item.members ? [...item.members] : [];
+    document.querySelectorAll('.member-toggle').forEach(b =>
+      b.classList.toggle('on', selectedMembers.includes(b.dataset.member)));
+    modalInput.value = item.text;
+    modalBg.classList.add('open');
+    setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
+  }
+  function closeModal() {
+    modalBg.classList.remove('open');
+    modalDate = null;
+    editingSchedId = null;
+  }
+  function handleModalBgClick(e) { if (e.target === modalBg) closeModal(); }
+  function selectType(type) {
+    selectedType = type;
+    document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('sel', b.dataset.type === type));
+  }
+  function toggleMember(name) {
+    const idx = selectedMembers.indexOf(name);
+    if (idx === -1) selectedMembers.push(name);
+    else            selectedMembers.splice(idx, 1);
+    document.querySelectorAll('.member-toggle').forEach(b =>
+      b.classList.toggle('on', selectedMembers.includes(b.dataset.member)));
+  }
+  function submitScheduleTask() {
+    const text = modalInput.value.trim();
+    if (!text) { modalInput.focus(); return; }
+    if (!modalDate) return;
+    const date    = modalDate;
+    const members = [...selectedMembers];
+    const type    = selectedType;
+
+    if (editingSchedId !== null) {
+      // Edit existing item — optimistically update local state
+      const item = schedItems.find(i => i.id === editingSchedId);
+      if (item) { item.text = text; item.type = type; item.members = members; }
+      send('edit_schedule', { id: editingSchedId, text, taskType: type, members });
+    } else {
+      // Add new item — optimistic temp entry
+      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members });
+      send('add_schedule', { text, date, taskType: type, members });
+    }
+
+    closeModal();
+    buildSchedule();
+  }
+  modalInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); submitScheduleTask(); }
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ── Form submit handlers ───────────────────────────────────────────────
+  document.getElementById('personal-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const text = document.getElementById('personal-input').value.trim();
+    if (!text) return;
+    const assigneeEl = document.getElementById('personal-assignee');
+    const target = assigneeEl ? assigneeEl.value : myName;
+    send('add_personal', { text, category: personalCat, urgent: personalUrgent, target });
+    if (target !== myName) toast('Task assigned to ' + target);
+    document.getElementById('personal-input').value = '';
+    personalUrgent = false;
+    document.getElementById('personal-urgent-btn').classList.remove('on');
+  });
+
+  document.getElementById('shorts-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('shorts-title-input').value.trim();
+    if (!title) return;
+    const notes = document.getElementById('shorts-notes-input').value.trim();
+    // Optimistically add to local state so the list updates immediately
+    shortsLog.push({ id: -(Date.now()), title, notes, used: false, date: null, assignee: null, addedBy: myName });
+    send('add_short', { title, notes });
+    document.getElementById('shorts-title-input').value = '';
+    document.getElementById('shorts-notes-input').value = '';
+    renderShorts(shortsLog);
+  });
+
+  document.getElementById('team-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const text = document.getElementById('team-input').value.trim();
+    if (!text) return;
+    send('add_team', { text, category: teamCat, urgent: teamUrgent });
+    document.getElementById('team-input').value = '';
+    teamUrgent = false;
+    document.getElementById('team-urgent-btn').classList.remove('on');
+  });
+
+  // ── WebSocket ──────────────────────────────────────────────────────────
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen = () => send('login', { name: myName });
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      switch (msg.type) {
+        case 'init':
+          youChip.textContent = msg.name;
+          renderAvatars(msg.onlineUsers);
+          renderPersonal(msg.personalTasks);
+          msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
+          renderTeam(msg.teamTasks);
+          schedItems = msg.scheduleItems || [];
+          shortsLog  = msg.shortsLog     || [];
+          if (activeTab === 'schedule') buildSchedule();
+          if (activeTab === 'shorts')   renderShorts(shortsLog);
+          break;
+        case 'personal_tasks':  renderPersonal(msg.tasks); break;
+        case 'team_tasks':      renderTeam(msg.tasks); break;
+        case 'schedule_items':
+          schedItems = msg.items;
+          if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'shorts_updated':
+          shortsLog = msg.shorts;
+          if (activeTab === 'shorts')   renderShorts(shortsLog);
+          if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'presence':
+          renderAvatars(msg.onlineUsers);
+          if (msg.joined && msg.joined !== myName) toast(msg.joined + ' joined');
+          if (msg.left) toast(msg.left + ' left');
+          break;
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+  }
+
+  function send(type, data = {}) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type, ...data }));
+  }
+
+  // ── Login ──────────────────────────────────────────────────────────────
+  function login(name) {
+    myName = name;
+    personalTitle.textContent = name + "'s Tasks";
+    loginScreen.classList.add('hidden');
+    appEl.classList.add('visible');
+    document.getElementById('personal-assign').style.display = name === 'Jack' ? 'flex' : 'none';
+    connect();
+  }
+</script>
+</body>
+</html>
