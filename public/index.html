@@ -365,10 +365,10 @@
       padding: 4px 11px; border-radius: 100px;
       white-space: nowrap; flex-shrink: 0;
     }
-    .cat-badge.create-short   { background: #fef3c7; color: #92400e; }
-    .cat-badge.edit-short     { background: #fee2e2; color: #991b1b; }
-    .cat-badge.create-graphic { background: #dcfce7; color: #166534; }
-    .cat-badge.edit-longform  { background: #dbeafe; color: #1e40af; }
+    .cat-badge.create-short    { background: #fef3c7; color: #92400e; }
+    .cat-badge.edit-short      { background: #fee2e2; color: #991b1b; }
+    .cat-badge.create-graphic  { background: #dcfce7; color: #166534; }
+    .cat-badge.edit-long-form  { background: #dbeafe; color: #1e40af; }
 
     /* Urgent badge on task */
     .urgent-badge {
@@ -852,6 +852,53 @@
     .person-col-body .task-item { font-size: 14px; padding: 14px 16px; }
     .person-col-body .task-text { font-size: 14px; }
 
+    /* ─── Daily date navigator ──────────────────────────────────────────── */
+    .personal-date-nav {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .pdn-arrow {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 8px 14px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      cursor: pointer; transition: border-color .15s, color .15s;
+      white-space: nowrap; flex-shrink: 0;
+      font-family: inherit;
+    }
+    .pdn-arrow:hover { border-color: var(--navy); color: var(--navy); }
+    .pdn-center {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .pdn-label {
+      font-size: 17px; font-weight: 700; color: var(--text);
+    }
+    .pdn-today-chip {
+      font-size: 11px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase;
+      background: var(--navy); color: white;
+      border-radius: 100px; padding: 3px 10px;
+    }
+    .pdn-jump-today {
+      font-size: 12px; font-weight: 600;
+      background: var(--card); color: var(--navy);
+      border: 1.5px solid var(--navy);
+      border-radius: 100px; padding: 4px 12px;
+      cursor: pointer; transition: background .15s, color .15s;
+      font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    }
+    .pdn-jump-today:hover { background: var(--navy); color: white; }
+    /* Unscheduled section separator */
+    .personal-section-sep {
+      display: flex; align-items: center; gap: 12px;
+      margin: 28px 0 16px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+    .personal-section-sep::before, .personal-section-sep::after {
+      content: ''; flex: 1; height: 1.5px; background: var(--border);
+    }
+
     /* ─── Date/time optional row in add forms ───────────────────────────── */
     .add-schedule-row {
       display: flex; align-items: center; gap: 10px;
@@ -1101,7 +1148,8 @@
           </div>
         </div>
       </form>
-      <div class="tasks-3col" id="tasks-3col-grid"></div>
+      <div id="personal-date-nav" class="personal-date-nav"></div>
+      <div id="tasks-3col-grid"></div>
     </div>
 
     <!-- Team Tasks -->
@@ -1348,6 +1396,7 @@
   let longFormsLog         = [];
   let longFormDetailId     = null;
   let selectedLongFormPerson = null;
+  let personalViewDate     = null; // ISO date string; null until first render
   const prevTeamIds  = new Set();
 
   // ── Confetti ───────────────────────────────────────────────────────────
@@ -1479,49 +1528,134 @@
     return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${period}`;
   }
 
-  // ── Render all personal tasks (3-column) ───────────────────────────────
+  // ── Render all personal tasks (daily view) ────────────────────────────
   function renderAllPersonal(allTasks) {
     allPersonalTasks = allTasks || {};
     myTasks = allPersonalTasks[myName] || [];
     personalCount.textContent = myTasks.filter(t => !t.done).length;
 
+    if (!personalViewDate) personalViewDate = toISO(new Date());
+    const today    = toISO(new Date());
+    const viewDate = personalViewDate;
+    const isToday  = viewDate === today;
+
+    // ── Rebuild date nav ─────────────────────────────────────────────────
+    const nav = document.getElementById('personal-date-nav');
+    if (nav) {
+      nav.innerHTML = '';
+
+      const prevDate = new Date(viewDate + 'T00:00:00');
+      prevDate.setDate(prevDate.getDate() - 1);
+      const nextDate = new Date(viewDate + 'T00:00:00');
+      nextDate.setDate(nextDate.getDate() + 1);
+      const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'pdn-arrow';
+      prevBtn.textContent = '← ' + fmt(prevDate);
+      prevBtn.onclick = prevPersonalDay;
+      nav.appendChild(prevBtn);
+
+      const center = document.createElement('div');
+      center.className = 'pdn-center';
+
+      const dateObj  = new Date(viewDate + 'T00:00:00');
+      const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      const label    = document.createElement('span');
+      label.className = 'pdn-label';
+      label.textContent = dayLabel;
+      center.appendChild(label);
+
+      if (isToday) {
+        const chip = document.createElement('span');
+        chip.className = 'pdn-today-chip';
+        chip.textContent = 'Today';
+        center.appendChild(chip);
+      } else {
+        const todayBtn = document.createElement('button');
+        todayBtn.className = 'pdn-jump-today';
+        todayBtn.textContent = 'Jump to Today';
+        todayBtn.onclick = goToPersonalToday;
+        center.appendChild(todayBtn);
+      }
+
+      nav.appendChild(center);
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'pdn-arrow';
+      nextBtn.textContent = fmt(nextDate) + ' →';
+      nextBtn.onclick = nextPersonalDay;
+      nav.appendChild(nextBtn);
+    }
+
+    // ── Build 3-column section ───────────────────────────────────────────
+    const PEOPLE    = ['Jack', 'Joe', 'Becca'];
+    const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
+    const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+
+    function buildColumns(filterFn, emptyMsg) {
+      const wrap = document.createElement('div');
+      wrap.className = 'tasks-3col';
+      PEOPLE.forEach(name => {
+        const tasks = sortTasks((allTasks[name] || []).filter(filterFn));
+        const isOwn = name === myName;
+        const col   = document.createElement('div');
+        col.className = 'person-col';
+        const hdr = document.createElement('div');
+        hdr.className = 'person-col-header ' + (HDR_CLASS[name] || '');
+        hdr.innerHTML =
+          `<span class="person-col-av">${INITIALS[name] || name[0]}</span>` +
+          `${name}<span class="person-col-count">${tasks.filter(t=>!t.done).length} active</span>`;
+        col.appendChild(hdr);
+        const body = document.createElement('div');
+        body.className = 'person-col-body';
+        if (!tasks.length) {
+          const empty = document.createElement('div');
+          empty.className = 'person-col-empty';
+          empty.textContent = emptyMsg;
+          body.appendChild(empty);
+        } else {
+          tasks.forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
+        }
+        col.appendChild(body);
+        wrap.appendChild(col);
+      });
+      return wrap;
+    }
+
     const grid = document.getElementById('tasks-3col-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    const PEOPLE = ['Jack', 'Joe', 'Becca'];
-    const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
-    const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+    // Dated section
+    grid.appendChild(buildColumns(t => t.date === viewDate, 'Nothing scheduled'));
 
-    PEOPLE.forEach(name => {
-      const tasks  = allTasks[name] || [];
-      const isOwn  = name === myName;
+    // Unscheduled section (always shown)
+    const hasUnscheduled = PEOPLE.some(n => (allTasks[n] || []).some(t => !t.date));
+    if (hasUnscheduled) {
+      const sep = document.createElement('div');
+      sep.className = 'personal-section-sep';
+      sep.innerHTML = '<span>Unscheduled</span>';
+      grid.appendChild(sep);
+      grid.appendChild(buildColumns(t => !t.date, 'No unscheduled tasks'));
+    }
+  }
 
-      const col = document.createElement('div');
-      col.className = 'person-col';
-
-      const header = document.createElement('div');
-      header.className = 'person-col-header ' + (HDR_CLASS[name] || '');
-      header.innerHTML =
-        `<span class="person-col-av">${INITIALS[name] || name[0]}</span>` +
-        `${name}<span class="person-col-count">${tasks.filter(t=>!t.done).length} active</span>`;
-      col.appendChild(header);
-
-      const body = document.createElement('div');
-      body.className = 'person-col-body';
-
-      if (!tasks.length) {
-        const empty = document.createElement('div');
-        empty.className = 'person-col-empty';
-        empty.textContent = 'No tasks yet';
-        body.appendChild(empty);
-      } else {
-        sortTasks(tasks).forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
-      }
-
-      col.appendChild(body);
-      grid.appendChild(col);
-    });
+  function prevPersonalDay() {
+    const d = new Date(personalViewDate + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    personalViewDate = toISO(d);
+    renderAllPersonal(allPersonalTasks);
+  }
+  function nextPersonalDay() {
+    const d = new Date(personalViewDate + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    personalViewDate = toISO(d);
+    renderAllPersonal(allPersonalTasks);
+  }
+  function goToPersonalToday() {
+    personalViewDate = toISO(new Date());
+    renderAllPersonal(allPersonalTasks);
   }
 
   // ── Render team tasks ──────────────────────────────────────────────────
