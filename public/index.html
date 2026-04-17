@@ -747,6 +747,239 @@
       header { padding: 0 16px; }
       .tab-bar { padding: 0 12px; }
       .day-cell { flex-wrap: wrap; }
+      .tasks-3col, .goals-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Sporty accent elements ────────────────────────────────────────── */
+    #login-screen {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent, transparent 22px,
+        rgba(255,255,255,.025) 22px, rgba(255,255,255,.025) 23px
+      );
+    }
+    header { position: relative; overflow: hidden; }
+    header::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(
+        -60deg, transparent, transparent 28px,
+        rgba(255,255,255,.022) 28px, rgba(255,255,255,.022) 29px
+      );
+      pointer-events: none;
+    }
+    .panel-title { position: relative; padding-left: 16px; }
+    .panel-title::before {
+      content: ''; position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 4px; height: 22px; background: var(--navy);
+      border-radius: 2px;
+    }
+    .week-heading { position: relative; padding-left: 12px; }
+    .week-heading::before {
+      content: ''; position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 11px; background: var(--navy);
+      border-radius: 2px; opacity: .35;
+    }
+    .empty {
+      background-image: repeating-linear-gradient(
+        -45deg, transparent, transparent 14px,
+        rgba(12,29,83,.022) 14px, rgba(12,29,83,.022) 15px
+      );
+    }
+    .login-card {
+      position: relative;
+    }
+    .login-card::before {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--navy) 0%, #1a3a8a 50%, var(--navy) 100%);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      opacity: .5;
+    }
+
+    /* ─── 3-column individual tasks ─────────────────────────────────────── */
+    .tasks-3col {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; align-items: start;
+    }
+    .person-col {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .person-col-header {
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700; color: white;
+      position: relative; overflow: hidden;
+    }
+    .person-col-header::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(
+        -55deg, transparent, transparent 16px,
+        rgba(255,255,255,.04) 16px, rgba(255,255,255,.04) 17px
+      );
+      pointer-events: none;
+    }
+    .person-col-header.hdr-jack  { background: #1e3a8a; }
+    .person-col-header.hdr-joe   { background: #1e3a5a; }
+    .person-col-header.hdr-becca { background: #0c1d53; }
+    .person-col-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.2); font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .person-col-count {
+      margin-left: auto; font-size: 12px; font-weight: 500; opacity: .65;
+    }
+    .person-col-body {
+      padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 80px;
+    }
+    .person-col-empty {
+      text-align: center; padding: 28px 16px;
+      color: var(--muted); font-size: 13px;
+      background-image: repeating-linear-gradient(
+        -45deg, transparent, transparent 12px,
+        rgba(12,29,83,.018) 12px, rgba(12,29,83,.018) 13px
+      );
+      border-radius: var(--radius);
+    }
+    .person-col-body .task-item { font-size: 14px; padding: 14px 16px; }
+    .person-col-body .task-text { font-size: 14px; }
+
+    /* ─── Date/time optional row in add forms ───────────────────────────── */
+    .add-schedule-row {
+      display: flex; align-items: center; gap: 10px;
+      padding-top: 12px; margin-top: 4px;
+      border-top: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .sched-opt-label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em; white-space: nowrap;
+    }
+    .sched-date-input, .sched-time-input {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; font-family: inherit;
+      color: var(--text); outline: none; background: var(--bg);
+      transition: border-color .15s;
+    }
+    .sched-date-input:focus, .sched-time-input:focus {
+      border-color: var(--navy); background: var(--card);
+    }
+    .task-date-badge {
+      font-size: 11px; font-weight: 600; color: #1e40af;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      padding: 2px 8px; border-radius: 100px; white-space: nowrap;
+    }
+    .task-time-badge {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 100px; white-space: nowrap;
+    }
+    .sched-time-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 2px 7px; border-radius: 100px; white-space: nowrap;
+    }
+    /* modal time input spacing */
+    .modal-time-row { display: flex; gap: 12px; margin-bottom: 22px; }
+    .modal-time-row .modal-input { margin-bottom: 0; flex: 1; }
+
+    /* ─── Goals tab ──────────────────────────────────────────────────────── */
+    .goals-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; align-items: start;
+    }
+    .goal-section {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .goal-section-header {
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700; color: white;
+      position: relative; overflow: hidden;
+    }
+    .goal-section-header::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(
+        -55deg, transparent, transparent 18px,
+        rgba(255,255,255,.04) 18px, rgba(255,255,255,.04) 19px
+      );
+      pointer-events: none;
+    }
+    .goal-section-header.hdr-weekly  { background: #1e3a8a; }
+    .goal-section-header.hdr-monthly { background: #1e3a5a; }
+    .goal-section-header.hdr-yearly  { background: #091540; }
+    .goal-section-icon {
+      font-size: 16px; opacity: .8;
+    }
+    .goal-add-row {
+      display: flex; gap: 8px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .goal-input {
+      flex: 1; padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; font-family: inherit;
+      color: var(--text); outline: none; background: var(--bg);
+      transition: border-color .15s;
+    }
+    .goal-input:focus { border-color: var(--navy); background: var(--card); }
+    .goal-add-btn {
+      padding: 10px 14px; background: var(--navy); color: white;
+      border: none; border-radius: var(--radius);
+      font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: background .15s;
+    }
+    .goal-add-btn:hover { background: var(--navy-hover); }
+    .goal-list {
+      padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; min-height: 60px;
+    }
+    .goal-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg); animation: slideDown .18s ease;
+      transition: box-shadow .15s;
+    }
+    .goal-item:hover { box-shadow: var(--shadow); }
+    .goal-item.done { opacity: .5; }
+    .goal-check {
+      width: 20px; height: 20px; border-radius: 5px;
+      border: 2px solid var(--border); flex-shrink: 0;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      margin-top: 1px; transition: all .15s;
+    }
+    .goal-check:hover { border-color: var(--navy); }
+    .goal-check.checked { background: var(--success); border-color: var(--success); }
+    .goal-check.checked::after {
+      content: ''; width: 10px; height: 6px;
+      border-left: 2px solid white; border-bottom: 2px solid white;
+      transform: rotate(-45deg) translateY(-1px); display: block;
+    }
+    .goal-text { flex: 1; font-size: 14px; line-height: 1.4; }
+    .goal-item.done .goal-text { text-decoration: line-through; color: var(--muted); }
+    .goal-by {
+      font-size: 11px; color: var(--muted); background: var(--card);
+      border: 1px solid var(--border); padding: 2px 7px;
+      border-radius: 100px; white-space: nowrap; flex-shrink: 0; align-self: flex-start;
+    }
+    .goal-del {
+      width: 24px; height: 24px; border: none; background: transparent;
+      cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .15s; flex-shrink: 0;
+      border-radius: 4px; align-self: flex-start;
+    }
+    .goal-item:hover .goal-del { opacity: 1; }
+    .goal-del:hover { background: var(--danger-bg); color: var(--danger); }
+    .goal-empty {
+      text-align: center; padding: 28px 16px;
+      color: var(--muted); font-size: 13px;
     }
   </style>
 </head>
@@ -817,6 +1050,7 @@
     <button class="tab"        data-tab="team"       onclick="switchTab('team')">Team Tasks</button>
     <button class="tab"        data-tab="schedule"   onclick="switchTab('schedule')">Schedule</button>
     <button class="tab"        data-tab="shorts"     onclick="switchTab('shorts')">Shorts Filmed</button>
+    <button class="tab"        data-tab="goals"      onclick="switchTab('goals')">Goals</button>
   </div>
 
   <main>
@@ -825,8 +1059,8 @@
     <div class="tab-panel active" id="panel-individual">
       <div class="panel-header">
         <div>
-          <div class="panel-title" id="personal-title">My Tasks</div>
-          <div class="panel-desc">Only visible to you</div>
+          <div class="panel-title">Individual Tasks</div>
+          <div class="panel-desc">Everyone's task lists — all visible, add to your own</div>
         </div>
         <span class="count-badge" id="personal-count">0</span>
       </div>
@@ -855,9 +1089,14 @@
             </div>
             <button type="submit" class="btn-primary">Add Task</button>
           </div>
+          <div class="add-schedule-row">
+            <span class="sched-opt-label">Schedule (optional)</span>
+            <input type="date" id="personal-date-input" class="sched-date-input">
+            <input type="time" id="personal-time-input" class="sched-time-input">
+          </div>
         </div>
       </form>
-      <div class="task-list" id="personal-list"></div>
+      <div class="tasks-3col" id="tasks-3col-grid"></div>
     </div>
 
     <!-- Team Tasks -->
@@ -925,6 +1164,52 @@
       <div class="task-list" id="shorts-list"></div>
     </div>
 
+    <!-- Goals -->
+    <div class="tab-panel" id="panel-goals">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Goals</div>
+          <div class="panel-desc">Weekly, monthly, and end-of-year targets</div>
+        </div>
+      </div>
+      <div class="goals-grid">
+
+        <div class="goal-section">
+          <div class="goal-section-header hdr-weekly">
+            <span class="goal-section-icon">⚡</span> Weekly Goals
+          </div>
+          <form class="goal-add-row" onsubmit="addGoal(event,'weekly')">
+            <input class="goal-input" type="text" id="goal-input-weekly" placeholder="Add a weekly goal..." maxlength="200" autocomplete="off">
+            <button class="goal-add-btn" type="submit">Add</button>
+          </form>
+          <div class="goal-list" id="goals-list-weekly"></div>
+        </div>
+
+        <div class="goal-section">
+          <div class="goal-section-header hdr-monthly">
+            <span class="goal-section-icon">📅</span> Monthly Goals
+          </div>
+          <form class="goal-add-row" onsubmit="addGoal(event,'monthly')">
+            <input class="goal-input" type="text" id="goal-input-monthly" placeholder="Add a monthly goal..." maxlength="200" autocomplete="off">
+            <button class="goal-add-btn" type="submit">Add</button>
+          </form>
+          <div class="goal-list" id="goals-list-monthly"></div>
+        </div>
+
+        <div class="goal-section">
+          <div class="goal-section-header hdr-yearly">
+            <span class="goal-section-icon">🏆</span> End of Year Goals
+          </div>
+          <form class="goal-add-row" onsubmit="addGoal(event,'yearly')">
+            <input class="goal-input" type="text" id="goal-input-yearly" placeholder="Add a year-end goal..." maxlength="200" autocomplete="off">
+            <button class="goal-add-btn" type="submit">Add</button>
+          </form>
+          <div class="goal-list" id="goals-list-yearly"></div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -935,6 +1220,10 @@
     <div class="modal-sub"   id="modal-sub"></div>
     <label class="form-label">Task</label>
     <input class="modal-input" type="text" id="modal-input" placeholder="Describe the task..." maxlength="200" autocomplete="off">
+    <label class="form-label">Time (optional)</label>
+    <div class="modal-time-row">
+      <input class="modal-input" type="time" id="modal-time-input">
+    </div>
     <label class="form-label">Type</label>
     <div class="type-row">
       <button type="button" class="type-opt sel" data-type="Shorts"    onclick="selectType('Shorts')">Shorts</button>
@@ -986,8 +1275,10 @@
   let ws           = null;
   let myName       = '';
   let myTasks      = [];
+  let allPersonalTasks = {};
   let sharedTasks  = [];
   let schedItems   = [];
+  let goals        = [];
   let activeTab    = 'individual';
   let modalDate       = null;
   let selectedType    = 'Shorts';
@@ -1081,10 +1372,8 @@
   const appEl         = document.getElementById('app');
   const youChip       = document.getElementById('you-chip');
   const avRow         = document.getElementById('av-row');
-  const personalTitle = document.getElementById('personal-title');
   const personalCount = document.getElementById('personal-count');
   const teamCount     = document.getElementById('team-count');
-  const personalList  = document.getElementById('personal-list');
   const teamList      = document.getElementById('team-list');
   const schedWeeks    = document.getElementById('schedule-weeks');
   const modalBg       = document.getElementById('modal-bg');
@@ -1107,6 +1396,7 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
     if (tab === 'schedule') buildSchedule();
     if (tab === 'shorts')   renderShorts(shortsLog);
+    if (tab === 'goals')    renderGoals(goals);
   }
 
   // ── Avatars ────────────────────────────────────────────────────────────
@@ -1126,16 +1416,57 @@
     return [...tasks].sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
   }
 
-  // ── Render personal tasks ──────────────────────────────────────────────
-  function renderPersonal(tasks) {
-    myTasks = tasks;
-    personalCount.textContent = tasks.length;
-    if (!tasks.length) {
-      personalList.innerHTML = '<div class="empty"><div class="empty-title">No tasks yet</div><div class="empty-desc">Add your first task above</div></div>';
-      return;
-    }
-    personalList.innerHTML = '';
-    sortTasks(tasks).forEach(task => personalList.appendChild(makeTaskEl(task, 'personal')));
+  // ── Format time helper ─────────────────────────────────────────────────
+  function formatTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${period}`;
+  }
+
+  // ── Render all personal tasks (3-column) ───────────────────────────────
+  function renderAllPersonal(allTasks) {
+    allPersonalTasks = allTasks || {};
+    myTasks = allPersonalTasks[myName] || [];
+    personalCount.textContent = myTasks.filter(t => !t.done).length;
+
+    const grid = document.getElementById('tasks-3col-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const PEOPLE = ['Jack', 'Joe', 'Becca'];
+    const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
+    const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+
+    PEOPLE.forEach(name => {
+      const tasks  = allTasks[name] || [];
+      const isOwn  = name === myName;
+
+      const col = document.createElement('div');
+      col.className = 'person-col';
+
+      const header = document.createElement('div');
+      header.className = 'person-col-header ' + (HDR_CLASS[name] || '');
+      header.innerHTML =
+        `<span class="person-col-av">${INITIALS[name] || name[0]}</span>` +
+        `${name}<span class="person-col-count">${tasks.filter(t=>!t.done).length} active</span>`;
+      col.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'person-col-body';
+
+      if (!tasks.length) {
+        const empty = document.createElement('div');
+        empty.className = 'person-col-empty';
+        empty.textContent = 'No tasks yet';
+        body.appendChild(empty);
+      } else {
+        sortTasks(tasks).forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
+      }
+
+      col.appendChild(body);
+      grid.appendChild(col);
+    });
   }
 
   // ── Render team tasks ──────────────────────────────────────────────────
@@ -1160,7 +1491,7 @@
   }
 
   // ── Build a task element ───────────────────────────────────────────────
-  function makeTaskEl(task, type) {
+  function makeTaskEl(task, type, canEdit = true) {
     const item = document.createElement('div');
 
     // ── Edit mode ──────────────────────────────────────────────────────
@@ -1253,25 +1584,41 @@
       item.appendChild(by);
     }
 
-    // Action buttons (edit + delete)
-    const actions = document.createElement('div');
-    actions.className = 'task-actions';
+    // Date / time badges
+    if (task.date) {
+      const db = document.createElement('span');
+      db.className = 'task-date-badge';
+      db.textContent = new Date(task.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      item.appendChild(db);
+    }
+    if (task.time) {
+      const tb = document.createElement('span');
+      tb.className = 'task-time-badge';
+      tb.textContent = formatTime(task.time);
+      item.appendChild(tb);
+    }
 
-    const editBtn = document.createElement('button');
-    editBtn.className = 'task-action-btn';
-    editBtn.title = 'Edit';
-    editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
-    editBtn.addEventListener('click', () => startEdit(task, type));
-    actions.appendChild(editBtn);
+    if (canEdit) {
+      // Action buttons (edit + delete)
+      const actions = document.createElement('div');
+      actions.className = 'task-actions';
 
-    const delBtn = document.createElement('button');
-    delBtn.className = 'task-action-btn del';
-    delBtn.title = 'Delete';
-    delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
-    delBtn.addEventListener('click', () => send(type === 'personal' ? 'delete_personal' : 'delete_team', { id: task.id }));
-    actions.appendChild(delBtn);
+      const editBtn = document.createElement('button');
+      editBtn.className = 'task-action-btn';
+      editBtn.title = 'Edit';
+      editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
+      editBtn.addEventListener('click', () => startEdit(task, type));
+      actions.appendChild(editBtn);
 
-    item.appendChild(actions);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'task-action-btn del';
+      delBtn.title = 'Delete';
+      delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
+      delBtn.addEventListener('click', () => send(type === 'personal' ? 'delete_personal' : 'delete_team', { id: task.id }));
+      actions.appendChild(delBtn);
+
+      item.appendChild(actions);
+    }
     return item;
   }
 
@@ -1280,13 +1627,13 @@
     editingId   = task.id;
     editingType = type;
     editUrgent  = !!task.urgent;
-    if (type === 'personal') renderPersonal(myTasks);
+    if (type === 'personal') renderAllPersonal(allPersonalTasks);
     else                     renderTeam(sharedTasks);
   }
 
   function cancelEdit() {
     editingId = null;
-    if (editingType === 'personal') renderPersonal(myTasks);
+    if (editingType === 'personal') renderAllPersonal(allPersonalTasks);
     else                            renderTeam(sharedTasks);
     editingType = null;
   }
@@ -1295,15 +1642,19 @@
     newText = newText.trim();
     if (!newText) return;
     // Optimistically update local state so the UI responds immediately
-    const arr = type === 'personal' ? myTasks : sharedTasks;
-    const t = arr.find(t => t.id === id);
-    if (t) { t.text = newText; t.urgent = editUrgent; }
+    if (type === 'personal') {
+      const t = myTasks.find(t => t.id === id);
+      if (t) { t.text = newText; t.urgent = editUrgent; }
+    } else {
+      const t = sharedTasks.find(t => t.id === id);
+      if (t) { t.text = newText; t.urgent = editUrgent; }
+    }
     const msgType = type === 'personal' ? 'edit_personal' : 'edit_team';
     send(msgType, { id, text: newText, urgent: editUrgent });
     editingId   = null;
     editingType = null;
     // Re-render immediately so the edit form exits without waiting for the server
-    if (type === 'personal') renderPersonal(myTasks);
+    if (type === 'personal') renderAllPersonal(allPersonalTasks);
     else                     renderTeam(sharedTasks);
   }
 
@@ -1380,9 +1731,17 @@
         // Tasks area — grouped by category
         const items = document.createElement('div');
         items.className = 'day-items';
-        // Merge manual schedule items with shorts that have been assigned this date
+        // Map personal task categories to schedule types
+        const CAT_TO_TYPE = { 'Create Short': 'Shorts', 'Edit Short': 'Shorts', 'Create Graphic': 'Graphics', 'Edit Long Form': 'Long Form' };
+        // Merge schedule items + personal tasks with dates + shorts assigned to this date
         const dayItems = [
           ...schedItems.filter(i => i.date === iso),
+          ...Object.entries(allPersonalTasks).flatMap(([person, tasks]) =>
+            (tasks || []).filter(t => t.date === iso && !t.done).map(t => ({
+              id: t.id, type: CAT_TO_TYPE[t.category] || 'Meetings',
+              text: t.text, members: [person], fromPersonalTask: true, time: t.time
+            }))
+          ),
           ...shortsLog
             .filter(s => s.date === iso && s.assignee && !s.used)
             .map(s => ({ id: s.id, type: 'Shorts', text: s.title, members: [s.assignee], fromShort: true })),
@@ -1454,6 +1813,13 @@
     badge.textContent = item.type;
     row.appendChild(badge);
 
+    if (item.time) {
+      const tl = document.createElement('span');
+      tl.className = 'sched-time-label';
+      tl.textContent = formatTime(item.time);
+      row.appendChild(tl);
+    }
+
     const text  = document.createElement('span');
     text.className = 'sched-text';
     text.textContent = item.text;
@@ -1470,7 +1836,10 @@
       });
     }
 
-    if (item.fromShort) {
+    if (item.fromPersonalTask) {
+      // Personal-task derived pill: read-only on schedule, no controls
+      row.style.cursor = 'default';
+    } else if (item.fromShort) {
       // Shorts-log derived pill: click opens short detail
       const viewBtn = document.createElement('button');
       viewBtn.className = 'sched-edit';
@@ -1652,6 +2021,7 @@
     selectedMembers = [];
     document.querySelectorAll('.member-toggle').forEach(b => b.classList.remove('on'));
     modalInput.value = '';
+    document.getElementById('modal-time-input').value = '';
     modalBg.classList.add('open');
     setTimeout(() => modalInput.focus(), 50);
   }
@@ -1666,6 +2036,7 @@
     document.querySelectorAll('.member-toggle').forEach(b =>
       b.classList.toggle('on', selectedMembers.includes(b.dataset.member)));
     modalInput.value = item.text;
+    document.getElementById('modal-time-input').value = item.time || '';
     modalBg.classList.add('open');
     setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
   }
@@ -1693,16 +2064,17 @@
     const date    = modalDate;
     const members = [...selectedMembers];
     const type    = selectedType;
+    const time    = document.getElementById('modal-time-input').value || null;
 
     if (editingSchedId !== null) {
       // Edit existing item — optimistically update local state
       const item = schedItems.find(i => i.id === editingSchedId);
-      if (item) { item.text = text; item.type = type; item.members = members; }
-      send('edit_schedule', { id: editingSchedId, text, taskType: type, members });
+      if (item) { item.text = text; item.type = type; item.members = members; item.time = time; }
+      send('edit_schedule', { id: editingSchedId, text, taskType: type, members, time: time || '' });
     } else {
       // Add new item — optimistic temp entry
-      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members });
-      send('add_schedule', { text, date, taskType: type, members });
+      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members, time });
+      send('add_schedule', { text, date, taskType: type, members, time: time || '' });
     }
 
     closeModal();
@@ -1720,9 +2092,13 @@
     if (!text) return;
     const assigneeEl = document.getElementById('personal-assignee');
     const target = assigneeEl ? assigneeEl.value : myName;
-    send('add_personal', { text, category: personalCat, urgent: personalUrgent, target });
+    const date = document.getElementById('personal-date-input').value || null;
+    const time = document.getElementById('personal-time-input').value || null;
+    send('add_personal', { text, category: personalCat, urgent: personalUrgent, target, date: date || '', time: time || '' });
     if (target !== myName) toast('Task assigned to ' + target);
     document.getElementById('personal-input').value = '';
+    document.getElementById('personal-date-input').value = '';
+    document.getElementById('personal-time-input').value = '';
     personalUrgent = false;
     document.getElementById('personal-urgent-btn').classList.remove('on');
   });
@@ -1750,6 +2126,75 @@
     document.getElementById('team-urgent-btn').classList.remove('on');
   });
 
+  // ── Goals ──────────────────────────────────────────────────────────────
+  function renderGoals(allGoals) {
+    goals = allGoals || [];
+    ['weekly', 'monthly', 'yearly'].forEach(period => {
+      const list = document.getElementById('goals-list-' + period);
+      if (!list) return;
+      const periodGoals = goals.filter(g => g.period === period);
+      list.innerHTML = '';
+      if (!periodGoals.length) {
+        list.innerHTML = '<div class="goal-empty">No goals yet — add one above</div>';
+        return;
+      }
+      // Incomplete first, then completed
+      const sorted = [...periodGoals].sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
+      sorted.forEach(g => {
+        const item = document.createElement('div');
+        item.className = 'goal-item' + (g.done ? ' done' : '');
+
+        const check = document.createElement('div');
+        check.className = 'goal-check' + (g.done ? ' checked' : '');
+        check.addEventListener('click', () => {
+          const wasUndone = !g.done;
+          g.done = !g.done;
+          const goalObj = goals.find(x => x.id === g.id);
+          if (goalObj) goalObj.done = g.done;
+          send('toggle_goal', { id: g.id });
+          renderGoals(goals);
+          if (wasUndone) {
+            const r = check.getBoundingClientRect();
+            launchConfetti(r.left + r.width / 2, r.top + r.height / 2);
+          }
+        });
+        item.appendChild(check);
+
+        const text = document.createElement('div');
+        text.className = 'goal-text';
+        text.textContent = g.text;
+        item.appendChild(text);
+
+        const by = document.createElement('div');
+        by.className = 'goal-by';
+        by.textContent = g.addedBy;
+        item.appendChild(by);
+
+        const del = document.createElement('button');
+        del.className = 'goal-del';
+        del.innerHTML = '&times;';
+        del.title = 'Delete';
+        del.addEventListener('click', () => { send('delete_goal', { id: g.id }); });
+        item.appendChild(del);
+
+        list.appendChild(item);
+      });
+    });
+  }
+
+  function addGoal(e, period) {
+    e.preventDefault();
+    const input = document.getElementById('goal-input-' + period);
+    const text  = input.value.trim();
+    if (!text) return;
+    // Optimistic add
+    const tempGoal = { id: -(Date.now()), text, done: false, period, addedBy: myName };
+    goals.push(tempGoal);
+    send('add_goal', { text, period });
+    input.value = '';
+    renderGoals(goals);
+  }
+
   // ── WebSocket ──────────────────────────────────────────────────────────
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -1761,15 +2206,21 @@
         case 'init':
           youChip.textContent = msg.name;
           renderAvatars(msg.onlineUsers);
-          renderPersonal(msg.personalTasks);
+          allPersonalTasks = msg.allPersonalTasks || {};
+          renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
           renderTeam(msg.teamTasks);
           schedItems = msg.scheduleItems || [];
           shortsLog  = msg.shortsLog     || [];
+          goals      = msg.goals         || [];
           if (activeTab === 'schedule') buildSchedule();
           if (activeTab === 'shorts')   renderShorts(shortsLog);
+          if (activeTab === 'goals')    renderGoals(goals);
           break;
-        case 'personal_tasks':  renderPersonal(msg.tasks); break;
+        case 'all_personal_tasks':
+          renderAllPersonal(msg.tasks);
+          if (activeTab === 'schedule') buildSchedule();
+          break;
         case 'team_tasks':      renderTeam(msg.tasks); break;
         case 'schedule_items':
           schedItems = msg.items;
@@ -1779,6 +2230,10 @@
           shortsLog = msg.shorts;
           if (activeTab === 'shorts')   renderShorts(shortsLog);
           if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'goals_updated':
+          goals = msg.goals;
+          if (activeTab === 'goals') renderGoals(goals);
           break;
         case 'presence':
           renderAvatars(msg.onlineUsers);
@@ -1797,7 +2252,6 @@
   // ── Login ──────────────────────────────────────────────────────────────
   function login(name) {
     myName = name;
-    personalTitle.textContent = name + "'s Tasks";
     loginScreen.classList.add('hidden');
     appEl.classList.add('visible');
     document.getElementById('personal-assign').style.display = name === 'Jack' ? 'flex' : 'none';

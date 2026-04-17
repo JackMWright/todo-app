@@ -13,6 +13,7 @@ const userTasks     = {};
 const teamTasks     = [];
 const scheduleItems = [];
 const shortsLog     = [];
+const goals         = [];
 const clients       = new Map();
 
 let nextId = 1;
@@ -20,12 +21,13 @@ let nextId = 1;
 const ALLOWED_USERS   = ['Jack', 'Joe', 'Becca'];
 const TASK_TYPES      = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'];
 const TASK_CATEGORIES = ['Create Short', 'Edit Short', 'Create Graphic', 'Edit Long Form'];
+const GOAL_PERIODS    = ['weekly', 'monthly', 'yearly'];
 
 function uid() { return nextId++; }
 function onlineUsers() { return [...clients.values()].map(u => u.name); }
 function send(ws, msg) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)); }
 function broadcast(msg) { for (const ws of wss.clients) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)); } }
-function sendToUser(name, msg) { for (const [cws, cu] of clients) { if (cu.name === name) send(cws, msg); } }
+function broadcastAllPersonal() { broadcast({ type: 'all_personal_tasks', tasks: userTasks }); }
 
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
@@ -40,7 +42,7 @@ wss.on('connection', (ws) => {
         if (!ALLOWED_USERS.includes(name)) return;
         if (!userTasks[name]) userTasks[name] = [];
         clients.set(ws, { name });
-        send(ws, { type: 'init', name, personalTasks: userTasks[name], teamTasks, scheduleItems, shortsLog, onlineUsers: onlineUsers() });
+        send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals });
         broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
         break;
       }
@@ -51,37 +53,41 @@ wss.on('connection', (ws) => {
         if (!text) return;
         const category = TASK_CATEGORIES.includes(msg.category) ? msg.category : null;
         const urgent   = !!msg.urgent;
+        const time     = (msg.time || '').trim() || null;
+        const date     = (msg.date || '').trim() || null;
         const target   = ALLOWED_USERS.includes(msg.target) ? msg.target : user.name;
         if (target !== user.name && user.name !== 'Jack') return;
         if (!userTasks[target]) userTasks[target] = [];
-        userTasks[target].push({ id: uid(), text, done: false, category, urgent, addedBy: user.name });
-        sendToUser(target, { type: 'personal_tasks', tasks: userTasks[target] });
+        userTasks[target].push({ id: uid(), text, done: false, category, urgent, addedBy: user.name, time, date });
+        broadcastAllPersonal();
         break;
       }
 
       case 'toggle_personal': {
         if (!user) return;
-        const t = userTasks[user.name].find(t => t.id === msg.id);
+        const t = (userTasks[user.name] || []).find(t => t.id === msg.id);
         if (t) t.done = !t.done;
-        sendToUser(user.name, { type: 'personal_tasks', tasks: userTasks[user.name] });
+        broadcastAllPersonal();
         break;
       }
 
       case 'delete_personal': {
         if (!user) return;
-        userTasks[user.name] = userTasks[user.name].filter(t => t.id !== msg.id);
-        sendToUser(user.name, { type: 'personal_tasks', tasks: userTasks[user.name] });
+        userTasks[user.name] = (userTasks[user.name] || []).filter(t => t.id !== msg.id);
+        broadcastAllPersonal();
         break;
       }
 
       case 'edit_personal': {
         if (!user) return;
-        const t = userTasks[user.name].find(t => t.id === msg.id);
+        const t = (userTasks[user.name] || []).find(t => t.id === msg.id);
         if (!t) return;
         if (msg.text     !== undefined) t.text     = (msg.text || '').trim() || t.text;
         if (msg.urgent   !== undefined) t.urgent   = !!msg.urgent;
+        if (msg.time     !== undefined) t.time     = (msg.time || '').trim() || null;
+        if (msg.date     !== undefined) t.date     = (msg.date || '').trim() || null;
         if (msg.category !== undefined && TASK_CATEGORIES.includes(msg.category)) t.category = msg.category;
-        sendToUser(user.name, { type: 'personal_tasks', tasks: userTasks[user.name] });
+        broadcastAllPersonal();
         break;
       }
 
@@ -128,19 +134,22 @@ wss.on('connection', (ws) => {
         const text = (msg.text || '').trim();
         const date = (msg.date || '').trim();
         const type = msg.taskType;
+        const time = (msg.time || '').trim() || null;
         if (!text || !date || !TASK_TYPES.includes(type)) return;
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
         const members = Array.isArray(msg.members)
           ? msg.members.filter(m => ALLOWED_USERS.includes(m))
           : [];
-        scheduleItems.push({ id: uid(), date, text, type, by: user.name, members });
+        scheduleItems.push({ id: uid(), date, text, type, by: user.name, members, time });
         broadcast({ type: 'schedule_items', items: scheduleItems });
         // Auto-add to each tagged member's personal task list
+        let personalChanged = false;
         members.forEach(member => {
           if (!userTasks[member]) userTasks[member] = [];
-          userTasks[member].push({ id: uid(), text, done: false, category: null, urgent: false, addedBy: user.name });
-          sendToUser(member, { type: 'personal_tasks', tasks: userTasks[member] });
+          userTasks[member].push({ id: uid(), text, done: false, category: null, urgent: false, addedBy: user.name, date, time });
+          personalChanged = true;
         });
+        if (personalChanged) broadcastAllPersonal();
         break;
       }
 
@@ -150,6 +159,7 @@ wss.on('connection', (ws) => {
         if (!item) return;
         if (msg.text     !== undefined) item.text    = (msg.text || '').trim() || item.text;
         if (msg.taskType !== undefined && TASK_TYPES.includes(msg.taskType)) item.type = msg.taskType;
+        if (msg.time     !== undefined) item.time    = (msg.time || '').trim() || null;
         if (Array.isArray(msg.members)) item.members = msg.members.filter(m => ALLOWED_USERS.includes(m));
         broadcast({ type: 'schedule_items', items: scheduleItems });
         break;
@@ -198,6 +208,32 @@ wss.on('connection', (ws) => {
         const idx = shortsLog.findIndex(s => s.id === msg.id);
         if (idx !== -1) shortsLog.splice(idx, 1);
         broadcast({ type: 'shorts_updated', shorts: shortsLog });
+        break;
+      }
+
+      case 'add_goal': {
+        if (!user) return;
+        const text   = (msg.text || '').trim();
+        const period = GOAL_PERIODS.includes(msg.period) ? msg.period : 'weekly';
+        if (!text) return;
+        goals.push({ id: uid(), text, done: false, period, addedBy: user.name });
+        broadcast({ type: 'goals_updated', goals });
+        break;
+      }
+
+      case 'toggle_goal': {
+        if (!user) return;
+        const g = goals.find(g => g.id === msg.id);
+        if (g) g.done = !g.done;
+        broadcast({ type: 'goals_updated', goals });
+        break;
+      }
+
+      case 'delete_goal': {
+        if (!user) return;
+        const idx = goals.findIndex(g => g.id === msg.id);
+        if (idx !== -1) goals.splice(idx, 1);
+        broadcast({ type: 'goals_updated', goals });
         break;
       }
     }
