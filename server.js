@@ -13,6 +13,7 @@ const userTasks     = {};
 const teamTasks     = [];
 const scheduleItems = [];
 const shortsLog     = [];
+const longFormsLog  = [];
 const goals         = [];
 const clients       = new Map();
 
@@ -42,7 +43,7 @@ wss.on('connection', (ws) => {
         if (!ALLOWED_USERS.includes(name)) return;
         if (!userTasks[name]) userTasks[name] = [];
         clients.set(ws, { name });
-        send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals });
+        send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals });
         broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
         break;
       }
@@ -209,6 +210,44 @@ wss.on('connection', (ws) => {
         const idx = shortsLog.findIndex(s => s.id === msg.id);
         if (idx !== -1) shortsLog.splice(idx, 1);
         broadcast({ type: 'shorts_updated', shorts: shortsLog });
+        break;
+      }
+
+      case 'add_long_form': {
+        if (!user) return;
+        const title = (msg.title || '').trim();
+        if (!title) return;
+        const notes = (msg.notes || '').trim();
+        longFormsLog.push({ id: uid(), title, notes, used: false, date: null, assignee: null, addedBy: user.name });
+        broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
+        break;
+      }
+
+      case 'toggle_long_form_used': {
+        if (!user) return;
+        const lf = longFormsLog.find(lf => lf.id === msg.id);
+        if (lf) lf.used = !lf.used;
+        broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
+        break;
+      }
+
+      case 'update_long_form': {
+        if (!user) return;
+        const lf = longFormsLog.find(lf => lf.id === msg.id);
+        if (!lf) return;
+        if (msg.title    !== undefined) lf.title    = (msg.title || '').trim() || lf.title;
+        if (msg.notes    !== undefined) lf.notes    = (msg.notes || '').trim();
+        if (msg.date     !== undefined) lf.date     = (msg.date && /^\d{4}-\d{2}-\d{2}$/.test(msg.date)) ? msg.date : null;
+        if (msg.assignee !== undefined) lf.assignee = ALLOWED_USERS.includes(msg.assignee) ? msg.assignee : null;
+        broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
+        break;
+      }
+
+      case 'delete_long_form': {
+        if (!user) return;
+        const idx2 = longFormsLog.findIndex(lf => lf.id === msg.id);
+        if (idx2 !== -1) longFormsLog.splice(idx2, 1);
+        broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
         break;
       }
 

@@ -711,6 +711,10 @@
       transition: box-shadow .15s;
       cursor: pointer;
       animation: slideDown .18s ease;
+      position: relative;
+    }
+    .short-corner-badge {
+      position: absolute; top: 12px; right: 12px;
     }
     .short-item:hover { box-shadow: var(--shadow-md); }
     .short-item.used { opacity: .45; }
@@ -1050,6 +1054,7 @@
     <button class="tab"        data-tab="team"       onclick="switchTab('team')">Team Tasks</button>
     <button class="tab"        data-tab="schedule"   onclick="switchTab('schedule')">Schedule</button>
     <button class="tab"        data-tab="shorts"     onclick="switchTab('shorts')">Shorts Filmed</button>
+    <button class="tab"        data-tab="longforms"  onclick="switchTab('longforms')">Long Forms Filmed</button>
     <button class="tab"        data-tab="goals"      onclick="switchTab('goals')">Goals</button>
   </div>
 
@@ -1164,6 +1169,29 @@
       <div class="task-list" id="shorts-list"></div>
     </div>
 
+    <!-- Long Forms Filmed -->
+    <div class="tab-panel" id="panel-longforms">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Long Forms Filmed</div>
+          <div class="panel-desc">Film log &amp; posting tracker</div>
+        </div>
+        <span class="count-badge" id="longforms-count">0</span>
+      </div>
+      <form id="longforms-form">
+        <div class="add-card">
+          <div class="add-top-row">
+            <input type="text" id="longforms-title-input" placeholder="Long form title..." maxlength="200" autocomplete="off">
+          </div>
+          <div class="add-meta">
+            <input type="text" class="notes-input" id="longforms-notes-input" placeholder="Notes (optional)..." maxlength="500" autocomplete="off">
+            <button type="submit" class="btn-primary">Log Long Form</button>
+          </div>
+        </div>
+      </form>
+      <div class="task-list" id="longforms-list"></div>
+    </div>
+
     <!-- Goals -->
     <div class="tab-panel" id="panel-goals">
       <div class="panel-header">
@@ -1268,6 +1296,29 @@
   </div>
 </div>
 
+<!-- Long Form detail modal -->
+<div class="modal-bg" id="longform-modal-bg" onclick="handleLongFormModalBgClick(event)">
+  <div class="modal">
+    <div class="modal-title">Long Form Details</div>
+    <label class="form-label">Title</label>
+    <input class="modal-input" type="text" id="longform-modal-title-input" placeholder="Long form title..." maxlength="200" autocomplete="off">
+    <label class="form-label">Notes</label>
+    <textarea class="modal-textarea" id="longform-modal-notes" placeholder="Optional notes..." maxlength="500" rows="3"></textarea>
+    <label class="form-label">Schedule Date</label>
+    <input class="modal-input" type="date" id="longform-modal-date" style="margin-bottom:22px">
+    <label class="form-label">Assign To</label>
+    <div class="member-row" id="longform-person-row">
+      <button type="button" class="member-toggle" data-person="Jack"  onclick="selectLongFormPerson('Jack')">JW</button>
+      <button type="button" class="member-toggle" data-person="Joe"   onclick="selectLongFormPerson('Joe')">JF</button>
+      <button type="button" class="member-toggle" data-person="Becca" onclick="selectLongFormPerson('Becca')">BS</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost"   onclick="closeLongFormDetail()">Cancel</button>
+      <button type="button" class="btn-primary" onclick="submitLongFormDetail()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1294,6 +1345,9 @@
   let shortsLog         = [];
   let shortDetailId     = null;
   let selectedShortPerson = null;
+  let longFormsLog         = [];
+  let longFormDetailId     = null;
+  let selectedLongFormPerson = null;
   const prevTeamIds  = new Set();
 
   // ── Confetti ───────────────────────────────────────────────────────────
@@ -1394,9 +1448,10 @@
     activeTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-    if (tab === 'schedule') buildSchedule();
-    if (tab === 'shorts')   renderShorts(shortsLog);
-    if (tab === 'goals')    renderGoals(goals);
+    if (tab === 'schedule')  buildSchedule();
+    if (tab === 'shorts')    renderShorts(shortsLog);
+    if (tab === 'longforms') renderLongForms(longFormsLog);
+    if (tab === 'goals')     renderGoals(goals);
   }
 
   // ── Avatars ────────────────────────────────────────────────────────────
@@ -1937,22 +1992,27 @@
       content.appendChild(notesEl);
     }
 
-    if (short.date && short.assignee) {
+    if (short.date) {
       const badge = document.createElement('div');
       badge.className = 'short-sched-badge';
       const dateLabel = new Date(short.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const dateSpan = document.createElement('span');
       dateSpan.className = 'short-sched-date';
       dateSpan.textContent = dateLabel;
-      const av = document.createElement('span');
-      av.className = 'sched-member ' + personClass(short.assignee);
-      av.textContent = MEMBER_INITIALS[short.assignee] || short.assignee.slice(0, 2).toUpperCase();
       badge.appendChild(dateSpan);
-      badge.appendChild(av);
       content.appendChild(badge);
     }
 
     item.appendChild(content);
+
+    // Assignee corner badge
+    if (short.assignee) {
+      const av = document.createElement('span');
+      av.className = 'sched-member short-corner-badge ' + personClass(short.assignee);
+      av.textContent = MEMBER_INITIALS[short.assignee] || short.assignee.slice(0, 2).toUpperCase();
+      av.title = short.assignee;
+      item.appendChild(av);
+    }
 
     // Action buttons (delete only, on hover)
     const actions = document.createElement('div');
@@ -2018,6 +2078,134 @@
     closeShortDetail();
     if (activeTab === 'shorts')   renderShorts(shortsLog);
     if (activeTab === 'schedule') buildSchedule();
+  }
+
+  // ── Long Forms Filmed ──────────────────────────────────────────────────
+  function renderLongForms(longForms) {
+    longFormsLog = longForms;
+    document.getElementById('longforms-count').textContent = longForms.length;
+    const list = document.getElementById('longforms-list');
+    if (!longForms.length) {
+      list.innerHTML = '<div class="empty"><div class="empty-title">No long forms logged yet</div><div class="empty-desc">Add filmed long forms above to track them</div></div>';
+      return;
+    }
+    list.innerHTML = '';
+    const sorted = [...longForms].sort((a, b) => {
+      const score = lf => lf.used ? 2 : (lf.date && lf.assignee ? 1 : 0);
+      return score(a) - score(b);
+    });
+    sorted.forEach(lf => list.appendChild(makeLongFormEl(lf)));
+  }
+
+  function makeLongFormEl(lf) {
+    const item = document.createElement('div');
+    item.className = 'short-item'
+      + (lf.used ? ' used' : '')
+      + (lf.date && lf.assignee ? ' scheduled' : '');
+
+    const check = document.createElement('div');
+    check.className = 'task-check' + (lf.used ? ' checked' : '');
+    check.title = 'Mark as used / posted';
+    check.addEventListener('click', (e) => {
+      e.stopPropagation();
+      lf.used = !lf.used;
+      const existing = longFormsLog.find(l => l.id === lf.id);
+      if (existing) existing.used = lf.used;
+      send('toggle_long_form_used', { id: lf.id });
+      renderLongForms(longFormsLog);
+    });
+    item.appendChild(check);
+
+    const content = document.createElement('div');
+    content.className = 'short-content';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'short-title';
+    titleEl.textContent = lf.title;
+    content.appendChild(titleEl);
+
+    if (lf.notes) {
+      const notesEl = document.createElement('div');
+      notesEl.className = 'short-notes';
+      notesEl.textContent = lf.notes;
+      content.appendChild(notesEl);
+    }
+
+    if (lf.date) {
+      const badge = document.createElement('div');
+      badge.className = 'short-sched-badge';
+      const dateLabel = new Date(lf.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'short-sched-date';
+      dateSpan.textContent = dateLabel;
+      badge.appendChild(dateSpan);
+      content.appendChild(badge);
+    }
+
+    item.appendChild(content);
+
+    if (lf.assignee) {
+      const av = document.createElement('span');
+      av.className = 'sched-member short-corner-badge ' + personClass(lf.assignee);
+      av.textContent = MEMBER_INITIALS[lf.assignee] || lf.assignee.slice(0, 2).toUpperCase();
+      av.title = lf.assignee;
+      item.appendChild(av);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'task-actions';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'task-action-btn del';
+    delBtn.title = 'Delete';
+    delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
+    delBtn.addEventListener('click', (e) => { e.stopPropagation(); send('delete_long_form', { id: lf.id }); });
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+
+    item.addEventListener('click', () => openLongFormDetail(lf));
+    return item;
+  }
+
+  function openLongFormDetail(lf) {
+    longFormDetailId       = lf.id;
+    selectedLongFormPerson = lf.assignee || null;
+    document.getElementById('longform-modal-title-input').value = lf.title;
+    document.getElementById('longform-modal-notes').value       = lf.notes || '';
+    document.getElementById('longform-modal-date').value        = lf.date  || '';
+    document.querySelectorAll('#longform-person-row .member-toggle').forEach(b =>
+      b.classList.toggle('on', b.dataset.person === selectedLongFormPerson));
+    document.getElementById('longform-modal-bg').classList.add('open');
+    setTimeout(() => document.getElementById('longform-modal-title-input').focus(), 50);
+  }
+
+  function closeLongFormDetail() {
+    document.getElementById('longform-modal-bg').classList.remove('open');
+    longFormDetailId       = null;
+    selectedLongFormPerson = null;
+  }
+
+  function handleLongFormModalBgClick(e) {
+    if (e.target === document.getElementById('longform-modal-bg')) closeLongFormDetail();
+  }
+
+  function selectLongFormPerson(name) {
+    selectedLongFormPerson = selectedLongFormPerson === name ? null : name;
+    document.querySelectorAll('#longform-person-row .member-toggle').forEach(b =>
+      b.classList.toggle('on', b.dataset.person === selectedLongFormPerson));
+  }
+
+  function submitLongFormDetail() {
+    if (!longFormDetailId) return;
+    const title    = document.getElementById('longform-modal-title-input').value.trim();
+    if (!title) { document.getElementById('longform-modal-title-input').focus(); return; }
+    const notes    = document.getElementById('longform-modal-notes').value.trim();
+    const date     = document.getElementById('longform-modal-date').value || null;
+    const assignee = selectedLongFormPerson;
+    const lf = longFormsLog.find(l => l.id === longFormDetailId);
+    if (lf) { lf.title = title; lf.notes = notes; lf.date = date; lf.assignee = assignee; }
+    send('update_long_form', { id: longFormDetailId, title, notes, date: date || '', assignee: assignee || '' });
+    closeLongFormDetail();
+    if (activeTab === 'longforms') renderLongForms(longFormsLog);
   }
 
   // ── Schedule modal ─────────────────────────────────────────────────────
@@ -2127,6 +2315,18 @@
     renderShorts(shortsLog);
   });
 
+  document.getElementById('longforms-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('longforms-title-input').value.trim();
+    if (!title) return;
+    const notes = document.getElementById('longforms-notes-input').value.trim();
+    longFormsLog.push({ id: -(Date.now()), title, notes, used: false, date: null, assignee: null, addedBy: myName });
+    send('add_long_form', { title, notes });
+    document.getElementById('longforms-title-input').value = '';
+    document.getElementById('longforms-notes-input').value = '';
+    renderLongForms(longFormsLog);
+  });
+
   document.getElementById('team-form').addEventListener('submit', e => {
     e.preventDefault();
     const text = document.getElementById('team-input').value.trim();
@@ -2222,11 +2422,13 @@
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
           renderTeam(msg.teamTasks);
           schedItems = msg.scheduleItems || [];
-          shortsLog  = msg.shortsLog     || [];
-          goals      = msg.goals         || [];
-          if (activeTab === 'schedule') buildSchedule();
-          if (activeTab === 'shorts')   renderShorts(shortsLog);
-          if (activeTab === 'goals')    renderGoals(goals);
+          shortsLog    = msg.shortsLog    || [];
+          longFormsLog = msg.longFormsLog || [];
+          goals        = msg.goals        || [];
+          if (activeTab === 'schedule')  buildSchedule();
+          if (activeTab === 'shorts')    renderShorts(shortsLog);
+          if (activeTab === 'longforms') renderLongForms(longFormsLog);
+          if (activeTab === 'goals')     renderGoals(goals);
           break;
         case 'all_personal_tasks':
           renderAllPersonal(msg.tasks);
@@ -2241,6 +2443,10 @@
           shortsLog = msg.shorts;
           if (activeTab === 'shorts')   renderShorts(shortsLog);
           if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'long_forms_updated':
+          longFormsLog = msg.longForms;
+          if (activeTab === 'longforms') renderLongForms(longFormsLog);
           break;
         case 'goals_updated':
           goals = msg.goals;
