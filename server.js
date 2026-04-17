@@ -4,6 +4,8 @@ const http = require('http');
 const path = require('path');
 const { Pool } = require('pg');
 
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
