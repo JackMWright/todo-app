@@ -73,7 +73,8 @@ wss.on('connection', (ws) => {
 
       case 'delete_personal': {
         if (!user) return;
-        userTasks[user.name] = (userTasks[user.name] || []).filter(t => t.id !== msg.id);
+        const owner = ALLOWED_USERS.includes(msg.owner) ? msg.owner : user.name;
+        userTasks[owner] = (userTasks[owner] || []).filter(t => t.id !== msg.id);
         broadcastAllPersonal();
         break;
       }
@@ -146,7 +147,7 @@ wss.on('connection', (ws) => {
         let personalChanged = false;
         members.forEach(member => {
           if (!userTasks[member]) userTasks[member] = [];
-          userTasks[member].push({ id: uid(), text, done: false, category: null, urgent: false, addedBy: user.name, date, time });
+          userTasks[member].push({ id: uid(), text, done: false, category: null, urgent: false, addedBy: user.name, date: null, time: null });
           personalChanged = true;
         });
         if (personalChanged) broadcastAllPersonal();

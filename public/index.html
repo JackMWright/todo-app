@@ -1739,7 +1739,7 @@
           ...Object.entries(allPersonalTasks).flatMap(([person, tasks]) =>
             (tasks || []).filter(t => t.date === iso && !t.done).map(t => ({
               id: t.id, type: CAT_TO_TYPE[t.category] || 'Meetings',
-              text: t.text, members: [person], fromPersonalTask: true, time: t.time
+              text: t.text, members: [person], fromPersonalTask: true, time: t.time, owner: person
             }))
           ),
           ...shortsLog
@@ -1837,16 +1837,27 @@
     }
 
     if (item.fromPersonalTask) {
-      // Personal-task derived pill: read-only on schedule, no controls
-      row.style.cursor = 'default';
+      // Personal-task derived pill: delete removes the task
+      const del = document.createElement('button');
+      del.className = 'sched-del';
+      del.innerHTML = '&times;';
+      del.title = 'Remove';
+      del.addEventListener('click', (e) => { e.stopPropagation(); send('delete_personal', { id: item.id, owner: item.owner }); });
+      row.appendChild(del);
     } else if (item.fromShort) {
-      // Shorts-log derived pill: click opens short detail
+      // Shorts-log derived pill: click opens short detail; delete unschedules it
       const viewBtn = document.createElement('button');
       viewBtn.className = 'sched-edit';
       viewBtn.title = 'View in Shorts log';
       viewBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2"/><path d="M1.5 7C2.8 4.2 4.7 2.5 7 2.5s4.2 1.7 5.5 4.5c-1.3 2.8-3.2 4.5-5.5 4.5S2.8 9.8 1.5 7z"/></svg>`;
       viewBtn.addEventListener('click', (e) => { e.stopPropagation(); openShortById(item.id); });
       row.appendChild(viewBtn);
+      const del = document.createElement('button');
+      del.className = 'sched-del';
+      del.innerHTML = '&times;';
+      del.title = 'Unschedule';
+      del.addEventListener('click', (e) => { e.stopPropagation(); send('update_short', { id: item.id, date: '', assignee: '' }); });
+      row.appendChild(del);
       row.addEventListener('click', () => openShortById(item.id));
     } else {
       // Regular schedule item: edit + delete
