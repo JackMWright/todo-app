@@ -553,6 +553,12 @@
     .sched-item.type-graphics  { background: #f0fdf4; border-color: #bbf7d0; }
     .sched-item.type-meetings  { background: #fff7ed; border-color: #fed7aa; }
     .sched-item.type-shoots    { background: #fdf4ff; border-color: #e9d5ff; }
+    .sched-item.sched-complete { background: #dcfce7 !important; border-color: #86efac; }
+    .sched-item.sched-complete .sched-text { color: #15803d; }
+    .sched-check-icon {
+      color: #16a34a; font-size: 12px; font-weight: 800;
+      flex-shrink: 0; line-height: 1;
+    }
     .type-badge {
       font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .04em;
@@ -897,6 +903,23 @@
     }
     .personal-section-sep::before, .personal-section-sep::after {
       content: ''; flex: 1; height: 1.5px; background: var(--border);
+    }
+
+    /* Within-column section labels */
+    .col-section-hdr {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); padding: 2px 4px 6px;
+    }
+    .col-section-divider {
+      display: flex; align-items: center; gap: 8px;
+      margin: 10px 0 4px;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted);
+    }
+    .col-section-divider::before, .col-section-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
     }
 
     /* ─── Date/time optional row in add forms ───────────────────────────── */
@@ -1593,52 +1616,66 @@
     const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
     const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
 
-    function buildColumns(filterFn, emptyMsg) {
-      const wrap = document.createElement('div');
-      wrap.className = 'tasks-3col';
-      PEOPLE.forEach(name => {
-        const tasks = sortTasks((allTasks[name] || []).filter(filterFn));
-        const isOwn = name === myName;
-        const col   = document.createElement('div');
-        col.className = 'person-col';
-        const hdr = document.createElement('div');
-        hdr.className = 'person-col-header ' + (HDR_CLASS[name] || '');
-        hdr.innerHTML =
-          `<span class="person-col-av">${INITIALS[name] || name[0]}</span>` +
-          `${name}<span class="person-col-count">${tasks.filter(t=>!t.done).length} active</span>`;
-        col.appendChild(hdr);
-        const body = document.createElement('div');
-        body.className = 'person-col-body';
-        if (!tasks.length) {
-          const empty = document.createElement('div');
-          empty.className = 'person-col-empty';
-          empty.textContent = emptyMsg;
-          body.appendChild(empty);
-        } else {
-          tasks.forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
-        }
-        col.appendChild(body);
-        wrap.appendChild(col);
-      });
-      return wrap;
-    }
-
     const grid = document.getElementById('tasks-3col-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    // Dated section
-    grid.appendChild(buildColumns(t => t.date === viewDate, 'Nothing scheduled'));
+    const wrap = document.createElement('div');
+    wrap.className = 'tasks-3col';
+    PEOPLE.forEach(name => {
+      const allPeopleTasks = allTasks[name] || [];
+      const datedTasks     = sortTasks(allPeopleTasks.filter(t => t.date === viewDate));
+      const undatedTasks   = isToday ? sortTasks(allPeopleTasks.filter(t => !t.date)) : [];
+      const isOwn          = name === myName;
+      const totalActive    = datedTasks.filter(t => !t.done).length + undatedTasks.filter(t => !t.done).length;
 
-    // Unscheduled section (always shown)
-    const hasUnscheduled = PEOPLE.some(n => (allTasks[n] || []).some(t => !t.date));
-    if (hasUnscheduled) {
-      const sep = document.createElement('div');
-      sep.className = 'personal-section-sep';
-      sep.innerHTML = '<span>Unscheduled</span>';
-      grid.appendChild(sep);
-      grid.appendChild(buildColumns(t => !t.date, 'No unscheduled tasks'));
-    }
+      const col = document.createElement('div');
+      col.className = 'person-col';
+
+      const hdr = document.createElement('div');
+      hdr.className = 'person-col-header ' + (HDR_CLASS[name] || '');
+      hdr.innerHTML = `<span class="person-col-av">${INITIALS[name] || name[0]}</span>${name}<span class="person-col-count">${totalActive} active</span>`;
+      col.appendChild(hdr);
+
+      const body = document.createElement('div');
+      body.className = 'person-col-body';
+
+      // "Today's Tasks" / dated section header
+      const todayHdr = document.createElement('div');
+      todayHdr.className = 'col-section-hdr';
+      todayHdr.textContent = isToday ? "Today's Tasks" : new Date(viewDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      body.appendChild(todayHdr);
+
+      if (datedTasks.length) {
+        datedTasks.forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'person-col-empty';
+        empty.textContent = 'Nothing scheduled';
+        body.appendChild(empty);
+      }
+
+      // "Unscheduled" section — only shown on today's view
+      if (isToday) {
+        const div = document.createElement('div');
+        div.className = 'col-section-divider';
+        div.innerHTML = '<span>Unscheduled</span>';
+        body.appendChild(div);
+
+        if (undatedTasks.length) {
+          undatedTasks.forEach(task => body.appendChild(makeTaskEl(task, 'personal', isOwn)));
+        } else {
+          const empty = document.createElement('div');
+          empty.className = 'person-col-empty';
+          empty.textContent = 'No unscheduled tasks';
+          body.appendChild(empty);
+        }
+      }
+
+      col.appendChild(body);
+      wrap.appendChild(col);
+    });
+    grid.appendChild(wrap);
   }
 
   function prevPersonalDay() {
@@ -1995,7 +2032,20 @@
   function makeSchedItem(item) {
     const row   = document.createElement('div');
     const key   = item.type === 'Long Form' ? 'longform' : item.type.toLowerCase();
-    row.className = 'sched-item type-' + key;
+
+    // Check if all members have completed their matching personal task
+    let isComplete = false;
+    if (!item.fromPersonalTask && !item.fromShort && item.members && item.members.length > 0) {
+      let hasTasks = 0, doneCount = 0;
+      item.members.forEach(member => {
+        const memberTasks = allPersonalTasks[member] || [];
+        const match = memberTasks.find(t => t.text === item.text);
+        if (match) { hasTasks++; if (match.done) doneCount++; }
+      });
+      isComplete = hasTasks > 0 && doneCount === hasTasks;
+    }
+
+    row.className = 'sched-item type-' + key + (isComplete ? ' sched-complete' : '');
 
     const badge = document.createElement('span');
     badge.className = 'type-badge ' + key;
@@ -2013,6 +2063,13 @@
     text.className = 'sched-text';
     text.textContent = item.text;
     row.appendChild(text);
+
+    if (isComplete) {
+      const checkIcon = document.createElement('span');
+      checkIcon.className = 'sched-check-icon';
+      checkIcon.textContent = '✓';
+      row.appendChild(checkIcon);
+    }
 
     // Member initials badges
     if (item.members && item.members.length) {
