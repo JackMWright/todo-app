@@ -6,6 +6,10 @@ const { Pool } = require('pg');
 
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
 
+// ── Process-level safety nets ──────────────────────────────────────────────
+process.on('uncaughtException',  err => console.error('Uncaught exception:',   err));
+process.on('unhandledRejection', err => console.error('Unhandled rejection:',  err));
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
@@ -15,9 +19,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── Database ───────────────────────────────────────────────────────────────
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Prevent pool errors (e.g. dropped connections) from crashing the process
+pool.on('error', err => console.error('Database pool error:', err.message));
+
 async function query(sql, params = []) {
-  const { rows } = await pool.query(sql, params);
-  return rows;
+  try {
+    const { rows } = await pool.query(sql, params);
+    return rows;
+  } catch (err) {
+    console.error('DB query error:', err.message, '\nSQL:', sql);
+    throw err;
+  }
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────────
@@ -89,30 +101,42 @@ const goals         = [];
 const clients       = new Map();
 
 async function loadData() {
-  (await query('SELECT * FROM personal_tasks ORDER BY id')).forEach(r => {
-    if (!userTasks[r.owner]) userTasks[r.owner] = [];
-    userTasks[r.owner].push({ id: r.id, text: r.text, done: r.done, category: r.category, urgent: r.urgent, addedBy: r.added_by, time: r.time, date: r.date });
-  });
+  try {
+    (await query('SELECT * FROM personal_tasks ORDER BY id')).forEach(r => {
+      if (!userTasks[r.owner]) userTasks[r.owner] = [];
+      userTasks[r.owner].push({ id: r.id, text: r.text, done: r.done, category: r.category, urgent: r.urgent, addedBy: r.added_by, time: r.time, date: r.date });
+    });
+  } catch (err) { console.error('Failed to load personal_tasks:', err.message); }
 
-  (await query('SELECT * FROM team_tasks ORDER BY id')).forEach(r => {
-    teamTasks.push({ id: r.id, text: r.text, done: r.done, by: r.by, category: r.category, urgent: r.urgent });
-  });
+  try {
+    (await query('SELECT * FROM team_tasks ORDER BY id')).forEach(r => {
+      teamTasks.push({ id: r.id, text: r.text, done: r.done, by: r.by, category: r.category, urgent: r.urgent });
+    });
+  } catch (err) { console.error('Failed to load team_tasks:', err.message); }
 
-  (await query('SELECT * FROM schedule_items ORDER BY id')).forEach(r => {
-    scheduleItems.push({ id: r.id, date: r.date, text: r.text, type: r.type, by: r.by, members: JSON.parse(r.members), time: r.time });
-  });
+  try {
+    (await query('SELECT * FROM schedule_items ORDER BY id')).forEach(r => {
+      scheduleItems.push({ id: r.id, date: r.date, text: r.text, type: r.type, by: r.by, members: JSON.parse(r.members), time: r.time });
+    });
+  } catch (err) { console.error('Failed to load schedule_items:', err.message); }
 
-  (await query('SELECT * FROM shorts ORDER BY id')).forEach(r => {
-    shortsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
-  });
+  try {
+    (await query('SELECT * FROM shorts ORDER BY id')).forEach(r => {
+      shortsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
+    });
+  } catch (err) { console.error('Failed to load shorts:', err.message); }
 
-  (await query('SELECT * FROM long_forms ORDER BY id')).forEach(r => {
-    longFormsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
-  });
+  try {
+    (await query('SELECT * FROM long_forms ORDER BY id')).forEach(r => {
+      longFormsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
+    });
+  } catch (err) { console.error('Failed to load long_forms:', err.message); }
 
-  (await query('SELECT * FROM goals ORDER BY id')).forEach(r => {
-    goals.push({ id: r.id, text: r.text, done: r.done, period: r.period, addedBy: r.added_by });
-  });
+  try {
+    (await query('SELECT * FROM goals ORDER BY id')).forEach(r => {
+      goals.push({ id: r.id, text: r.text, done: r.done, period: r.period, addedBy: r.added_by });
+    });
+  } catch (err) { console.error('Failed to load goals:', err.message); }
 }
 
 // ── Constants & helpers ────────────────────────────────────────────────────
@@ -128,12 +152,14 @@ function broadcastAllPersonal() { broadcast({ type: 'all_personal_tasks', tasks:
 
 // ── WebSocket handlers ─────────────────────────────────────────────────────
 wss.on('connection', (ws) => {
-  ws.on('message', (raw) => {
-    (async () => {
-      let msg;
-      try { msg = JSON.parse(raw); } catch { return; }
-      const user = clients.get(ws);
+  ws.on('error', err => console.error('WebSocket client error:', err.message));
 
+  ws.on('message', async (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+    const user = clients.get(ws);
+
+    try {
       switch (msg.type) {
 
         case 'login': {
@@ -438,7 +464,9 @@ wss.on('connection', (ws) => {
           break;
         }
       }
-    })().catch(err => console.error('WS handler error:', err));
+    } catch (err) {
+      console.error(`WS message error [${msg.type}]:`, err.message);
+    }
   });
 
   ws.on('close', () => {
