@@ -191,12 +191,23 @@ const TASK_CATEGORIES = ['Create Short', 'Edit Short', 'Create Graphic', 'Edit L
 const GOAL_PERIODS    = ['weekly', 'monthly', 'yearly'];
 
 function onlineUsers() { return [...clients.values()].map(u => u.name); }
-function send(ws, msg) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)); }
-function broadcast(msg) { for (const ws of wss.clients) { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)); } }
+function send(ws, msg) {
+  if (ws.readyState !== ws.OPEN) return;
+  try { ws.send(JSON.stringify(msg)); } catch (err) { console.error('send() error:', err.message); }
+}
+function broadcast(msg) {
+  for (const ws of wss.clients) {
+    if (ws.readyState !== ws.OPEN) continue;
+    try { ws.send(JSON.stringify(msg)); } catch (err) { console.error('broadcast() error:', err.message); }
+  }
+}
 function broadcastAllPersonal() { broadcast({ type: 'all_personal_tasks', tasks: userTasks }); }
 
 // ── WebSocket handlers ─────────────────────────────────────────────────────
+wss.on('error', err => console.error('WebSocket server error:', err.message));
+
 wss.on('connection', (ws) => {
+  console.log('WS: client connected');
   ws.on('error', err => console.error('WebSocket client error:', err.message));
 
   ws.on('message', async (raw) => {
@@ -515,8 +526,16 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    const user = clients.get(ws);
-    if (user) { clients.delete(ws); broadcast({ type: 'presence', onlineUsers: onlineUsers(), left: user.name }); }
+    try {
+      const user = clients.get(ws);
+      clients.delete(ws);
+      if (user) {
+        console.log('WS: client disconnected:', user.name);
+        broadcast({ type: 'presence', onlineUsers: onlineUsers(), left: user.name });
+      }
+    } catch (err) {
+      console.error('WS close handler error:', err.message);
+    }
   });
 });
 
