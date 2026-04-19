@@ -34,61 +34,84 @@ async function query(sql, params = []) {
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 async function createTables() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS personal_tasks (
-      id       SERIAL PRIMARY KEY,
-      owner    TEXT NOT NULL,
-      text     TEXT NOT NULL,
-      done     BOOLEAN NOT NULL DEFAULT FALSE,
-      category TEXT,
-      urgent   BOOLEAN NOT NULL DEFAULT FALSE,
-      added_by TEXT NOT NULL,
-      time     TEXT,
-      date     TEXT
-    );
-    CREATE TABLE IF NOT EXISTS team_tasks (
-      id       SERIAL PRIMARY KEY,
-      text     TEXT NOT NULL,
-      done     BOOLEAN NOT NULL DEFAULT FALSE,
-      by       TEXT NOT NULL,
-      category TEXT,
-      urgent   BOOLEAN NOT NULL DEFAULT FALSE
-    );
-    CREATE TABLE IF NOT EXISTS schedule_items (
-      id      SERIAL PRIMARY KEY,
-      date    TEXT NOT NULL,
-      text    TEXT NOT NULL,
-      type    TEXT NOT NULL,
-      by      TEXT NOT NULL,
-      members TEXT NOT NULL DEFAULT '[]',
-      time    TEXT
-    );
-    CREATE TABLE IF NOT EXISTS shorts (
-      id       SERIAL PRIMARY KEY,
-      title    TEXT NOT NULL,
-      notes    TEXT NOT NULL DEFAULT '',
-      used     BOOLEAN NOT NULL DEFAULT FALSE,
-      date     TEXT,
-      assignee TEXT,
-      added_by TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS long_forms (
-      id       SERIAL PRIMARY KEY,
-      title    TEXT NOT NULL,
-      notes    TEXT NOT NULL DEFAULT '',
-      used     BOOLEAN NOT NULL DEFAULT FALSE,
-      date     TEXT,
-      assignee TEXT,
-      added_by TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS goals (
-      id       SERIAL PRIMARY KEY,
-      text     TEXT NOT NULL,
-      done     BOOLEAN NOT NULL DEFAULT FALSE,
-      period   TEXT NOT NULL,
-      added_by TEXT NOT NULL
-    );
-  `);
+  const tables = [
+    ['personal_tasks', `
+      CREATE TABLE IF NOT EXISTS personal_tasks (
+        id       SERIAL PRIMARY KEY,
+        owner    TEXT NOT NULL,
+        text     TEXT NOT NULL,
+        done     BOOLEAN NOT NULL DEFAULT FALSE,
+        category TEXT,
+        urgent   BOOLEAN NOT NULL DEFAULT FALSE,
+        added_by TEXT NOT NULL,
+        time     TEXT,
+        date     TEXT
+      )
+    `],
+    ['team_tasks', `
+      CREATE TABLE IF NOT EXISTS team_tasks (
+        id       SERIAL PRIMARY KEY,
+        text     TEXT NOT NULL,
+        done     BOOLEAN NOT NULL DEFAULT FALSE,
+        by       TEXT NOT NULL,
+        category TEXT,
+        urgent   BOOLEAN NOT NULL DEFAULT FALSE
+      )
+    `],
+    ['schedule_items', `
+      CREATE TABLE IF NOT EXISTS schedule_items (
+        id      SERIAL PRIMARY KEY,
+        date    TEXT NOT NULL,
+        text    TEXT NOT NULL,
+        type    TEXT NOT NULL,
+        by      TEXT NOT NULL,
+        members TEXT NOT NULL DEFAULT '[]',
+        time    TEXT
+      )
+    `],
+    ['shorts', `
+      CREATE TABLE IF NOT EXISTS shorts (
+        id       SERIAL PRIMARY KEY,
+        title    TEXT NOT NULL,
+        notes    TEXT NOT NULL DEFAULT '',
+        used     BOOLEAN NOT NULL DEFAULT FALSE,
+        date     TEXT,
+        assignee TEXT,
+        added_by TEXT NOT NULL
+      )
+    `],
+    ['long_forms', `
+      CREATE TABLE IF NOT EXISTS long_forms (
+        id       SERIAL PRIMARY KEY,
+        title    TEXT NOT NULL,
+        notes    TEXT NOT NULL DEFAULT '',
+        used     BOOLEAN NOT NULL DEFAULT FALSE,
+        date     TEXT,
+        assignee TEXT,
+        added_by TEXT NOT NULL
+      )
+    `],
+    ['goals', `
+      CREATE TABLE IF NOT EXISTS goals (
+        id       SERIAL PRIMARY KEY,
+        text     TEXT NOT NULL,
+        done     BOOLEAN NOT NULL DEFAULT FALSE,
+        period   TEXT NOT NULL,
+        added_by TEXT NOT NULL
+      )
+    `],
+  ];
+
+  for (const [name, sql] of tables) {
+    console.log(`createTables: creating ${name}...`);
+    try {
+      await pool.query(sql);
+      console.log(`createTables: ${name} OK`);
+    } catch (err) {
+      console.error(`createTables: FAILED on ${name}:`, err.message);
+      throw err;
+    }
+  }
 }
 
 // ── In-memory state ────────────────────────────────────────────────────────
@@ -101,42 +124,64 @@ const goals         = [];
 const clients       = new Map();
 
 async function loadData() {
+  console.log('loadData: starting...');
+
+  console.log('loadData: querying personal_tasks...');
   try {
-    (await query('SELECT * FROM personal_tasks ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM personal_tasks ORDER BY id');
+    console.log(`loadData: personal_tasks OK (${rows.length} rows)`);
+    rows.forEach(r => {
       if (!userTasks[r.owner]) userTasks[r.owner] = [];
       userTasks[r.owner].push({ id: r.id, text: r.text, done: r.done, category: r.category, urgent: r.urgent, addedBy: r.added_by, time: r.time, date: r.date });
     });
-  } catch (err) { console.error('Failed to load personal_tasks:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on personal_tasks:', err.message); }
 
+  console.log('loadData: querying team_tasks...');
   try {
-    (await query('SELECT * FROM team_tasks ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM team_tasks ORDER BY id');
+    console.log(`loadData: team_tasks OK (${rows.length} rows)`);
+    rows.forEach(r => {
       teamTasks.push({ id: r.id, text: r.text, done: r.done, by: r.by, category: r.category, urgent: r.urgent });
     });
-  } catch (err) { console.error('Failed to load team_tasks:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on team_tasks:', err.message); }
 
+  console.log('loadData: querying schedule_items...');
   try {
-    (await query('SELECT * FROM schedule_items ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM schedule_items ORDER BY id');
+    console.log(`loadData: schedule_items OK (${rows.length} rows)`);
+    rows.forEach(r => {
       scheduleItems.push({ id: r.id, date: r.date, text: r.text, type: r.type, by: r.by, members: JSON.parse(r.members), time: r.time });
     });
-  } catch (err) { console.error('Failed to load schedule_items:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on schedule_items:', err.message); }
 
+  console.log('loadData: querying shorts...');
   try {
-    (await query('SELECT * FROM shorts ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM shorts ORDER BY id');
+    console.log(`loadData: shorts OK (${rows.length} rows)`);
+    rows.forEach(r => {
       shortsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
     });
-  } catch (err) { console.error('Failed to load shorts:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on shorts:', err.message); }
 
+  console.log('loadData: querying long_forms...');
   try {
-    (await query('SELECT * FROM long_forms ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM long_forms ORDER BY id');
+    console.log(`loadData: long_forms OK (${rows.length} rows)`);
+    rows.forEach(r => {
       longFormsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
     });
-  } catch (err) { console.error('Failed to load long_forms:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on long_forms:', err.message); }
 
+  console.log('loadData: querying goals...');
   try {
-    (await query('SELECT * FROM goals ORDER BY id')).forEach(r => {
+    const rows = await query('SELECT * FROM goals ORDER BY id');
+    console.log(`loadData: goals OK (${rows.length} rows)`);
+    rows.forEach(r => {
       goals.push({ id: r.id, text: r.text, done: r.done, period: r.period, addedBy: r.added_by });
     });
-  } catch (err) { console.error('Failed to load goals:', err.message); }
+  } catch (err) { console.error('loadData: FAILED on goals:', err.message); }
+
+  console.log('loadData: done');
 }
 
 // ── Constants & helpers ────────────────────────────────────────────────────
