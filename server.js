@@ -354,10 +354,10 @@ wss.on('connection', (ws) => {
           for (const member of members) {
             if (!userTasks[member]) userTasks[member] = [];
             const [pr] = await query(
-              'INSERT INTO personal_tasks (owner,text,done,category,urgent,added_by,time,date) VALUES ($1,$2,FALSE,NULL,FALSE,$3,NULL,NULL) RETURNING id',
-              [member, text, user.name]
+              'INSERT INTO personal_tasks (owner,text,done,category,urgent,added_by,time,date) VALUES ($1,$2,FALSE,NULL,FALSE,$3,NULL,$4) RETURNING id',
+              [member, text, user.name, date]
             );
-            userTasks[member].push({ id: pr.id, text, done: false, category: null, urgent: false, addedBy: user.name, date: null, time: null });
+            userTasks[member].push({ id: pr.id, text, done: false, category: null, urgent: false, addedBy: user.name, date, time: null });
             personalChanged = true;
           }
           if (personalChanged) broadcastAllPersonal();

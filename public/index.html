@@ -1624,10 +1624,22 @@
     wrap.className = 'tasks-3col';
     PEOPLE.forEach(name => {
       const allPeopleTasks = allTasks[name] || [];
-      const datedTasks     = sortTasks(allPeopleTasks.filter(t => t.date === viewDate));
-      const undatedTasks   = isToday ? sortTasks(allPeopleTasks.filter(t => !t.date)) : [];
-      const isOwn          = name === myName;
-      const totalActive    = datedTasks.filter(t => !t.done).length + undatedTasks.filter(t => !t.done).length;
+
+      // Texts of schedule items assigned to this person on the viewed date.
+      // Used to "promote" undated personal tasks (created before the server bug was
+      // fixed) into the dated section so they appear under Today's Tasks.
+      const schedLinkedTexts = new Set(
+        schedItems.filter(i => i.date === viewDate && i.members.includes(name)).map(i => i.text)
+      );
+
+      const datedTasks   = sortTasks(allPeopleTasks.filter(t =>
+        t.date === viewDate || (!t.date && schedLinkedTexts.has(t.text))
+      ));
+      const undatedTasks = isToday
+        ? sortTasks(allPeopleTasks.filter(t => !t.date && !schedLinkedTexts.has(t.text)))
+        : [];
+      const isOwn        = name === myName;
+      const totalActive  = datedTasks.filter(t => !t.done).length + undatedTasks.filter(t => !t.done).length;
 
       const col = document.createElement('div');
       col.className = 'person-col';
