@@ -112,6 +112,16 @@ async function createTables() {
       throw err;
     }
   }
+
+  // Migrations — add columns to existing tables if missing
+  const migrations = [
+    ["shorts.members",     `ALTER TABLE shorts     ADD COLUMN IF NOT EXISTS members TEXT NOT NULL DEFAULT '[]'`],
+    ["long_forms.members", `ALTER TABLE long_forms ADD COLUMN IF NOT EXISTS members TEXT NOT NULL DEFAULT '[]'`],
+  ];
+  for (const [name, sql] of migrations) {
+    try { await pool.query(sql); console.log(`migration: ${name} OK`); }
+    catch (err) { console.error(`migration: ${name} FAILED:`, err.message); }
+  }
 }
 
 // ── In-memory state ────────────────────────────────────────────────────────
@@ -159,7 +169,7 @@ async function loadData() {
     const rows = await query('SELECT * FROM shorts ORDER BY id');
     console.log(`loadData: shorts OK (${rows.length} rows)`);
     rows.forEach(r => {
-      shortsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
+      shortsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by, members: r.members ? JSON.parse(r.members) : [] });
     });
   } catch (err) { console.error('loadData: FAILED on shorts:', err.message); }
 
@@ -168,7 +178,7 @@ async function loadData() {
     const rows = await query('SELECT * FROM long_forms ORDER BY id');
     console.log(`loadData: long_forms OK (${rows.length} rows)`);
     rows.forEach(r => {
-      longFormsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by });
+      longFormsLog.push({ id: r.id, title: r.title, notes: r.notes, used: r.used, date: r.date, assignee: r.assignee, addedBy: r.added_by, members: r.members ? JSON.parse(r.members) : [] });
     });
   } catch (err) { console.error('loadData: FAILED on long_forms:', err.message); }
 
@@ -423,10 +433,10 @@ wss.on('connection', (ws) => {
           if (!title) return;
           const notes = (msg.notes || '').trim();
           const [row] = await query(
-            'INSERT INTO shorts (title,notes,used,date,assignee,added_by) VALUES ($1,$2,FALSE,NULL,NULL,$3) RETURNING id',
-            [title, notes, user.name]
+            'INSERT INTO shorts (title,notes,used,date,assignee,added_by,members) VALUES ($1,$2,FALSE,NULL,NULL,$3,$4) RETURNING id',
+            [title, notes, user.name, '[]']
           );
-          shortsLog.push({ id: row.id, title, notes, used: false, date: null, assignee: null, addedBy: user.name });
+          shortsLog.push({ id: row.id, title, notes, used: false, date: null, assignee: null, addedBy: user.name, members: [] });
           broadcast({ type: 'shorts_updated', shorts: shortsLog });
           break;
         }
@@ -445,13 +455,16 @@ wss.on('connection', (ws) => {
           if (!user) return;
           const s = shortsLog.find(s => s.id === msg.id);
           if (!s) return;
-          if (msg.title    !== undefined) s.title    = (msg.title || '').trim() || s.title;
-          if (msg.notes    !== undefined) s.notes    = (msg.notes || '').trim();
-          if (msg.date     !== undefined) s.date     = (msg.date && /^\d{4}-\d{2}-\d{2}$/.test(msg.date)) ? msg.date : null;
-          if (msg.assignee !== undefined) s.assignee = ALLOWED_USERS.includes(msg.assignee) ? msg.assignee : null;
+          if (msg.title   !== undefined) s.title   = (msg.title || '').trim() || s.title;
+          if (msg.notes   !== undefined) s.notes   = (msg.notes || '').trim();
+          if (msg.date    !== undefined) s.date    = (msg.date && /^\d{4}-\d{2}-\d{2}$/.test(msg.date)) ? msg.date : null;
+          if (Array.isArray(msg.members)) {
+            s.members  = msg.members.filter(m => ALLOWED_USERS.includes(m));
+            s.assignee = s.members[0] || null;
+          }
           await query(
-            'UPDATE shorts SET title=$1,notes=$2,date=$3,assignee=$4 WHERE id=$5',
-            [s.title, s.notes, s.date, s.assignee, msg.id]
+            'UPDATE shorts SET title=$1,notes=$2,date=$3,assignee=$4,members=$5 WHERE id=$6',
+            [s.title, s.notes, s.date, s.assignee, JSON.stringify(s.members || []), msg.id]
           );
           broadcast({ type: 'shorts_updated', shorts: shortsLog });
           break;
@@ -472,10 +485,10 @@ wss.on('connection', (ws) => {
           if (!title) return;
           const notes = (msg.notes || '').trim();
           const [row] = await query(
-            'INSERT INTO long_forms (title,notes,used,date,assignee,added_by) VALUES ($1,$2,FALSE,NULL,NULL,$3) RETURNING id',
-            [title, notes, user.name]
+            'INSERT INTO long_forms (title,notes,used,date,assignee,added_by,members) VALUES ($1,$2,FALSE,NULL,NULL,$3,$4) RETURNING id',
+            [title, notes, user.name, '[]']
           );
-          longFormsLog.push({ id: row.id, title, notes, used: false, date: null, assignee: null, addedBy: user.name });
+          longFormsLog.push({ id: row.id, title, notes, used: false, date: null, assignee: null, addedBy: user.name, members: [] });
           broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
           break;
         }
@@ -494,13 +507,16 @@ wss.on('connection', (ws) => {
           if (!user) return;
           const lf = longFormsLog.find(lf => lf.id === msg.id);
           if (!lf) return;
-          if (msg.title    !== undefined) lf.title    = (msg.title || '').trim() || lf.title;
-          if (msg.notes    !== undefined) lf.notes    = (msg.notes || '').trim();
-          if (msg.date     !== undefined) lf.date     = (msg.date && /^\d{4}-\d{2}-\d{2}$/.test(msg.date)) ? msg.date : null;
-          if (msg.assignee !== undefined) lf.assignee = ALLOWED_USERS.includes(msg.assignee) ? msg.assignee : null;
+          if (msg.title   !== undefined) lf.title   = (msg.title || '').trim() || lf.title;
+          if (msg.notes   !== undefined) lf.notes   = (msg.notes || '').trim();
+          if (msg.date    !== undefined) lf.date    = (msg.date && /^\d{4}-\d{2}-\d{2}$/.test(msg.date)) ? msg.date : null;
+          if (Array.isArray(msg.members)) {
+            lf.members  = msg.members.filter(m => ALLOWED_USERS.includes(m));
+            lf.assignee = lf.members[0] || null;
+          }
           await query(
-            'UPDATE long_forms SET title=$1,notes=$2,date=$3,assignee=$4 WHERE id=$5',
-            [lf.title, lf.notes, lf.date, lf.assignee, msg.id]
+            'UPDATE long_forms SET title=$1,notes=$2,date=$3,assignee=$4,members=$5 WHERE id=$6',
+            [lf.title, lf.notes, lf.date, lf.assignee, JSON.stringify(lf.members || []), msg.id]
           );
           broadcast({ type: 'long_forms_updated', longForms: longFormsLog });
           break;

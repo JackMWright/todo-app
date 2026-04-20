@@ -722,6 +722,10 @@
     .short-corner-badge {
       position: absolute; top: 12px; right: 12px;
     }
+    .short-members {
+      display: flex; align-items: center; gap: 4px;
+      flex-shrink: 0; margin-left: auto;
+    }
     .short-item:hover { box-shadow: var(--shadow-md); }
     .short-item.used { opacity: .45; }
     .short-item.scheduled { border-left: 3px solid #1e40af; }
@@ -1354,11 +1358,11 @@
     <textarea class="modal-textarea" id="short-modal-notes" placeholder="Optional notes..." maxlength="500" rows="3"></textarea>
     <label class="form-label">Schedule Date</label>
     <input class="modal-input" type="date" id="short-modal-date" style="margin-bottom:22px">
-    <label class="form-label">Assign To</label>
+    <label class="form-label">Tag Members</label>
     <div class="member-row" id="short-person-row">
-      <button type="button" class="member-toggle" data-person="Jack"  onclick="selectShortPerson('Jack')">JW</button>
-      <button type="button" class="member-toggle" data-person="Joe"   onclick="selectShortPerson('Joe')">JF</button>
-      <button type="button" class="member-toggle" data-person="Becca" onclick="selectShortPerson('Becca')">BS</button>
+      <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleShortMember('Jack')">JW</button>
+      <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleShortMember('Joe')">JF</button>
+      <button type="button" class="member-toggle" data-member="Becca" onclick="toggleShortMember('Becca')">BS</button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-ghost"   onclick="closeShortDetail()">Cancel</button>
@@ -1377,11 +1381,11 @@
     <textarea class="modal-textarea" id="longform-modal-notes" placeholder="Optional notes..." maxlength="500" rows="3"></textarea>
     <label class="form-label">Schedule Date</label>
     <input class="modal-input" type="date" id="longform-modal-date" style="margin-bottom:22px">
-    <label class="form-label">Assign To</label>
+    <label class="form-label">Tag Members</label>
     <div class="member-row" id="longform-person-row">
-      <button type="button" class="member-toggle" data-person="Jack"  onclick="selectLongFormPerson('Jack')">JW</button>
-      <button type="button" class="member-toggle" data-person="Joe"   onclick="selectLongFormPerson('Joe')">JF</button>
-      <button type="button" class="member-toggle" data-person="Becca" onclick="selectLongFormPerson('Becca')">BS</button>
+      <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleLongFormMember('Jack')">JW</button>
+      <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleLongFormMember('Joe')">JF</button>
+      <button type="button" class="member-toggle" data-member="Becca" onclick="toggleLongFormMember('Becca')">BS</button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-ghost"   onclick="closeLongFormDetail()">Cancel</button>
@@ -1414,11 +1418,11 @@
   let editUrgent     = false;
   let editingSchedId = null;
   let shortsLog         = [];
-  let shortDetailId     = null;
-  let selectedShortPerson = null;
+  let shortDetailId       = null;
+  let selectedShortMembers = [];
   let longFormsLog         = [];
   let longFormDetailId     = null;
-  let selectedLongFormPerson = null;
+  let selectedLongFormMembers = [];
   let personalViewDate     = null; // ISO date string; null until first render
   const prevTeamIds  = new Set();
 
@@ -1981,8 +1985,8 @@
             }))
           ),
           ...shortsLog
-            .filter(s => s.date === iso && s.assignee && !s.used)
-            .map(s => ({ id: s.id, type: 'Shorts', text: s.title, members: [s.assignee], fromShort: true })),
+            .filter(s => s.date === iso && !s.used && (s.members?.length || s.assignee))
+            .map(s => ({ id: s.id, type: 'Shorts', text: s.title, members: s.members?.length ? s.members : [s.assignee], fromShort: true })),
         ];
         if (dayItems.length) {
           const TYPE_ORDER = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'];
@@ -2161,7 +2165,7 @@
     const item = document.createElement('div');
     item.className = 'short-item'
       + (short.used ? ' used' : '')
-      + (short.date && short.assignee ? ' scheduled' : '');
+      + (short.date ? ' scheduled' : '');
 
     // Used checkbox
     const check = document.createElement('div');
@@ -2208,13 +2212,20 @@
 
     item.appendChild(content);
 
-    // Assignee corner badge
-    if (short.assignee) {
-      const av = document.createElement('span');
-      av.className = 'sched-member short-corner-badge ' + personClass(short.assignee);
-      av.textContent = MEMBER_INITIALS[short.assignee] || short.assignee.slice(0, 2).toUpperCase();
-      av.title = short.assignee;
-      item.appendChild(av);
+    // Member badges
+    const members = short.members && short.members.length ? short.members
+                  : short.assignee ? [short.assignee] : [];
+    if (members.length) {
+      const row = document.createElement('div');
+      row.className = 'short-members';
+      members.forEach(m => {
+        const av = document.createElement('span');
+        av.className = 'sched-member ' + personClass(m);
+        av.textContent = MEMBER_INITIALS[m] || m.slice(0, 2).toUpperCase();
+        av.title = m;
+        row.appendChild(av);
+      });
+      item.appendChild(row);
     }
 
     // Action buttons (delete only, on hover)
@@ -2235,13 +2246,15 @@
 
   // ── Shorts detail modal ────────────────────────────────────────────────
   function openShortDetail(short) {
-    shortDetailId       = short.id;
-    selectedShortPerson = short.assignee || null;
+    shortDetailId        = short.id;
+    selectedShortMembers = short.members && short.members.length
+      ? [...short.members]
+      : (short.assignee ? [short.assignee] : []);
     document.getElementById('short-modal-title-input').value = short.title;
     document.getElementById('short-modal-notes').value       = short.notes || '';
     document.getElementById('short-modal-date').value        = short.date  || '';
     document.querySelectorAll('#short-person-row .member-toggle').forEach(b =>
-      b.classList.toggle('on', b.dataset.person === selectedShortPerson));
+      b.classList.toggle('on', selectedShortMembers.includes(b.dataset.member)));
     document.getElementById('short-modal-bg').classList.add('open');
     setTimeout(() => document.getElementById('short-modal-title-input').focus(), 50);
   }
@@ -2253,31 +2266,33 @@
 
   function closeShortDetail() {
     document.getElementById('short-modal-bg').classList.remove('open');
-    shortDetailId       = null;
-    selectedShortPerson = null;
+    shortDetailId        = null;
+    selectedShortMembers = [];
   }
 
   function handleShortModalBgClick(e) {
     if (e.target === document.getElementById('short-modal-bg')) closeShortDetail();
   }
 
-  function selectShortPerson(name) {
-    selectedShortPerson = selectedShortPerson === name ? null : name;
+  function toggleShortMember(name) {
+    const idx = selectedShortMembers.indexOf(name);
+    if (idx === -1) selectedShortMembers.push(name);
+    else            selectedShortMembers.splice(idx, 1);
     document.querySelectorAll('#short-person-row .member-toggle').forEach(b =>
-      b.classList.toggle('on', b.dataset.person === selectedShortPerson));
+      b.classList.toggle('on', selectedShortMembers.includes(b.dataset.member)));
   }
 
   function submitShortDetail() {
     if (!shortDetailId) return;
-    const title    = document.getElementById('short-modal-title-input').value.trim();
+    const title   = document.getElementById('short-modal-title-input').value.trim();
     if (!title) { document.getElementById('short-modal-title-input').focus(); return; }
-    const notes    = document.getElementById('short-modal-notes').value.trim();
-    const date     = document.getElementById('short-modal-date').value || null;
-    const assignee = selectedShortPerson;
+    const notes   = document.getElementById('short-modal-notes').value.trim();
+    const date    = document.getElementById('short-modal-date').value || null;
+    const members = [...selectedShortMembers];
     // Optimistic update
     const s = shortsLog.find(s => s.id === shortDetailId);
-    if (s) { s.title = title; s.notes = notes; s.date = date; s.assignee = assignee; }
-    send('update_short', { id: shortDetailId, title, notes, date: date || '', assignee: assignee || '' });
+    if (s) { s.title = title; s.notes = notes; s.date = date; s.members = members; s.assignee = members[0] || null; }
+    send('update_short', { id: shortDetailId, title, notes, date: date || '', members });
     closeShortDetail();
     if (activeTab === 'shorts')   renderShorts(shortsLog);
     if (activeTab === 'schedule') buildSchedule();
@@ -2304,7 +2319,7 @@
     const item = document.createElement('div');
     item.className = 'short-item'
       + (lf.used ? ' used' : '')
-      + (lf.date && lf.assignee ? ' scheduled' : '');
+      + (lf.date ? ' scheduled' : '');
 
     const check = document.createElement('div');
     check.className = 'task-check' + (lf.used ? ' checked' : '');
@@ -2347,12 +2362,20 @@
 
     item.appendChild(content);
 
-    if (lf.assignee) {
-      const av = document.createElement('span');
-      av.className = 'sched-member short-corner-badge ' + personClass(lf.assignee);
-      av.textContent = MEMBER_INITIALS[lf.assignee] || lf.assignee.slice(0, 2).toUpperCase();
-      av.title = lf.assignee;
-      item.appendChild(av);
+    // Member badges
+    const lfMembers = lf.members && lf.members.length ? lf.members
+                    : lf.assignee ? [lf.assignee] : [];
+    if (lfMembers.length) {
+      const row = document.createElement('div');
+      row.className = 'short-members';
+      lfMembers.forEach(m => {
+        const av = document.createElement('span');
+        av.className = 'sched-member ' + personClass(m);
+        av.textContent = MEMBER_INITIALS[m] || m.slice(0, 2).toUpperCase();
+        av.title = m;
+        row.appendChild(av);
+      });
+      item.appendChild(row);
     }
 
     const actions = document.createElement('div');
@@ -2370,43 +2393,47 @@
   }
 
   function openLongFormDetail(lf) {
-    longFormDetailId       = lf.id;
-    selectedLongFormPerson = lf.assignee || null;
+    longFormDetailId         = lf.id;
+    selectedLongFormMembers  = lf.members && lf.members.length
+      ? [...lf.members]
+      : (lf.assignee ? [lf.assignee] : []);
     document.getElementById('longform-modal-title-input').value = lf.title;
     document.getElementById('longform-modal-notes').value       = lf.notes || '';
     document.getElementById('longform-modal-date').value        = lf.date  || '';
     document.querySelectorAll('#longform-person-row .member-toggle').forEach(b =>
-      b.classList.toggle('on', b.dataset.person === selectedLongFormPerson));
+      b.classList.toggle('on', selectedLongFormMembers.includes(b.dataset.member)));
     document.getElementById('longform-modal-bg').classList.add('open');
     setTimeout(() => document.getElementById('longform-modal-title-input').focus(), 50);
   }
 
   function closeLongFormDetail() {
     document.getElementById('longform-modal-bg').classList.remove('open');
-    longFormDetailId       = null;
-    selectedLongFormPerson = null;
+    longFormDetailId        = null;
+    selectedLongFormMembers = [];
   }
 
   function handleLongFormModalBgClick(e) {
     if (e.target === document.getElementById('longform-modal-bg')) closeLongFormDetail();
   }
 
-  function selectLongFormPerson(name) {
-    selectedLongFormPerson = selectedLongFormPerson === name ? null : name;
+  function toggleLongFormMember(name) {
+    const idx = selectedLongFormMembers.indexOf(name);
+    if (idx === -1) selectedLongFormMembers.push(name);
+    else            selectedLongFormMembers.splice(idx, 1);
     document.querySelectorAll('#longform-person-row .member-toggle').forEach(b =>
-      b.classList.toggle('on', b.dataset.person === selectedLongFormPerson));
+      b.classList.toggle('on', selectedLongFormMembers.includes(b.dataset.member)));
   }
 
   function submitLongFormDetail() {
     if (!longFormDetailId) return;
-    const title    = document.getElementById('longform-modal-title-input').value.trim();
+    const title   = document.getElementById('longform-modal-title-input').value.trim();
     if (!title) { document.getElementById('longform-modal-title-input').focus(); return; }
-    const notes    = document.getElementById('longform-modal-notes').value.trim();
-    const date     = document.getElementById('longform-modal-date').value || null;
-    const assignee = selectedLongFormPerson;
+    const notes   = document.getElementById('longform-modal-notes').value.trim();
+    const date    = document.getElementById('longform-modal-date').value || null;
+    const members = [...selectedLongFormMembers];
     const lf = longFormsLog.find(l => l.id === longFormDetailId);
-    if (lf) { lf.title = title; lf.notes = notes; lf.date = date; lf.assignee = assignee; }
-    send('update_long_form', { id: longFormDetailId, title, notes, date: date || '', assignee: assignee || '' });
+    if (lf) { lf.title = title; lf.notes = notes; lf.date = date; lf.members = members; lf.assignee = members[0] || null; }
+    send('update_long_form', { id: longFormDetailId, title, notes, date: date || '', members });
     closeLongFormDetail();
     if (activeTab === 'longforms') renderLongForms(longFormsLog);
   }
