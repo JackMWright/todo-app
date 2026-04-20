@@ -2658,14 +2658,15 @@
         case 'init':
           youChip.textContent = msg.name;
           renderAvatars(msg.onlineUsers);
+          // Populate all shared state before any render so every render sees complete data
+          schedItems   = msg.scheduleItems || [];
+          shortsLog    = msg.shortsLog     || [];
+          longFormsLog = msg.longFormsLog  || [];
+          goals        = msg.goals         || [];
           allPersonalTasks = msg.allPersonalTasks || {};
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
           renderTeam(msg.teamTasks);
-          schedItems = msg.scheduleItems || [];
-          shortsLog    = msg.shortsLog    || [];
-          longFormsLog = msg.longFormsLog || [];
-          goals        = msg.goals        || [];
           if (activeTab === 'schedule')  buildSchedule();
           if (activeTab === 'shorts')    renderShorts(shortsLog);
           if (activeTab === 'longforms') renderLongForms(longFormsLog);
