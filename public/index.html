@@ -1620,6 +1620,16 @@
     const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
     const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
 
+    // ── Debug logging ────────────────────────────────────────────────────
+    console.log('[renderAllPersonal] viewDate:', viewDate, '| today:', today, '| isToday:', isToday);
+    console.log('[renderAllPersonal] schedItems count:', schedItems.length);
+    schedItems.forEach(i => console.log('  sched item:', JSON.stringify({ id: i.id, date: i.date, text: i.text, members: i.members })));
+    PEOPLE.forEach(name => {
+      const tasks = allTasks[name] || [];
+      console.log(`[renderAllPersonal] ${name} tasks (${tasks.length}):`,
+        tasks.map(t => ({ id: t.id, text: t.text.slice(0, 30), date: t.date })));
+    });
+
     const grid = document.getElementById('tasks-3col-grid');
     if (!grid) return;
     grid.innerHTML = '';
@@ -1635,6 +1645,7 @@
       const schedLinkedTexts = new Set(
         schedItems.filter(i => i.date === viewDate && i.members.includes(name)).map(i => i.text)
       );
+      console.log(`[renderAllPersonal] ${name} schedLinkedTexts for ${viewDate}:`, [...schedLinkedTexts]);
 
       const datedTasks   = sortTasks(allPeopleTasks.filter(t =>
         t.date === viewDate || (!t.date && schedLinkedTexts.has(t.text))
