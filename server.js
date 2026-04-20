@@ -223,8 +223,36 @@ wss.on('connection', (ws) => {
           if (!ALLOWED_USERS.includes(name)) return;
           if (!userTasks[name]) userTasks[name] = [];
           clients.set(ws, { name });
+
+          console.log(`login: building init payload for ${name}`);
+          console.log(`login: teamTasks        count=${teamTasks.length}`);
+          console.log(`login: scheduleItems    count=${scheduleItems.length}`);
+          console.log(`login: shortsLog        count=${shortsLog.length}`);
+          console.log(`login: longFormsLog     count=${longFormsLog.length}`);
+          console.log(`login: goals            count=${goals.length}`);
+          console.log(`login: allPersonalTasks owners=${Object.keys(userTasks).join(',')}`);
+          Object.entries(userTasks).forEach(([owner, tasks]) =>
+            console.log(`login: userTasks[${owner}] count=${tasks.length}`)
+          );
+
+          console.log('login: serialising teamTasks...');
+          JSON.stringify(teamTasks);
+          console.log('login: serialising scheduleItems...');
+          JSON.stringify(scheduleItems);
+          console.log('login: serialising shortsLog...');
+          JSON.stringify(shortsLog);
+          console.log('login: serialising longFormsLog...');
+          JSON.stringify(longFormsLog);
+          console.log('login: serialising goals...');
+          JSON.stringify(goals);
+          console.log('login: serialising userTasks...');
+          JSON.stringify(userTasks);
+          console.log('login: all serialisations OK — sending init...');
+
           send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals });
+          console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
+          console.log('login: done');
           break;
         }
 
