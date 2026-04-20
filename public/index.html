@@ -1620,16 +1620,6 @@
     const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
     const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
 
-    // ── Debug logging ────────────────────────────────────────────────────
-    console.log('[renderAllPersonal] viewDate:', viewDate, '| today:', today, '| isToday:', isToday);
-    console.log('[renderAllPersonal] schedItems count:', schedItems.length);
-    schedItems.forEach(i => console.log('  sched item:', JSON.stringify({ id: i.id, date: i.date, text: i.text, members: i.members })));
-    PEOPLE.forEach(name => {
-      const tasks = allTasks[name] || [];
-      console.log(`[renderAllPersonal] ${name} tasks (${tasks.length}):`,
-        tasks.map(t => ({ id: t.id, text: t.text.slice(0, 30), date: t.date })));
-    });
-
     const grid = document.getElementById('tasks-3col-grid');
     if (!grid) return;
     grid.innerHTML = '';
@@ -1639,17 +1629,32 @@
     PEOPLE.forEach(name => {
       const allPeopleTasks = allTasks[name] || [];
 
-      // Texts of schedule items assigned to this person on the viewed date.
-      // Used to "promote" undated personal tasks (created before the server bug was
-      // fixed) into the dated section so they appear under Today's Tasks.
-      const schedLinkedTexts = new Set(
-        schedItems.filter(i => i.date === viewDate && i.members.includes(name)).map(i => i.text)
-      );
-      console.log(`[renderAllPersonal] ${name} schedLinkedTexts for ${viewDate}:`, [...schedLinkedTexts]);
+      // Schedule items assigned to this person on the viewed date, keyed by text.
+      // Used to: (a) promote old null-date personal tasks into the dated section,
+      // and (b) supply a type badge for tasks that have no category.
+      const schedForDay = schedItems.filter(i => i.date === viewDate && i.members.includes(name));
+      const schedLinkedTexts = new Set(schedForDay.map(i => i.text));
+      const schedTypeForText = new Map(schedForDay.map(i => [i.text, i.type]));
 
-      const datedTasks   = sortTasks(allPeopleTasks.filter(t =>
+      // Build dated list then deduplicate by text: prefer the explicitly-dated row
+      // over any null-date promoted row so old+new copies don't both appear.
+      const rawDated = allPeopleTasks.filter(t =>
         t.date === viewDate || (!t.date && schedLinkedTexts.has(t.text))
-      ));
+      );
+      const dedupMap = new Map();
+      for (const t of rawDated) {
+        const existing = dedupMap.get(t.text);
+        if (!existing || (!existing.date && t.date)) dedupMap.set(t.text, t);
+      }
+      // Enrich with schedType so makeTaskEl can show a type badge
+      const datedTasks = sortTasks(
+        [...dedupMap.values()].map(t =>
+          (!t.category && schedTypeForText.has(t.text))
+            ? { ...t, schedType: schedTypeForText.get(t.text) }
+            : t
+        )
+      );
+
       const undatedTasks = isToday
         ? sortTasks(allPeopleTasks.filter(t => !t.date && !schedLinkedTexts.has(t.text)))
         : [];
@@ -1823,6 +1828,12 @@
       cb.className = 'cat-badge ' + task.category.toLowerCase().replace(/ /g, '-');
       cb.textContent = task.category;
       item.appendChild(cb);
+    } else if (task.schedType) {
+      const key = task.schedType === 'Long Form' ? 'longform' : task.schedType.toLowerCase();
+      const sb = document.createElement('span');
+      sb.className = 'type-badge ' + key;
+      sb.textContent = task.schedType;
+      item.appendChild(sb);
     }
 
     const text = document.createElement('div');
