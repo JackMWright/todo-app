@@ -1998,10 +1998,15 @@
         // Map personal task categories to schedule types
         const CAT_TO_TYPE = { 'Create Short': 'Shorts', 'Edit Short': 'Shorts', 'Create Graphic': 'Graphics', 'Edit Long Form': 'Long Form' };
         // Merge schedule items + personal tasks with dates + shorts assigned to this date
+        const schedItemsForDay = schedItems.filter(i => i.date === iso);
         const dayItems = [
-          ...schedItems.filter(i => i.date === iso),
+          ...schedItemsForDay,
           ...Object.entries(allPersonalTasks).flatMap(([person, tasks]) =>
-            (tasks || []).filter(t => t.date === iso && !t.done).map(t => ({
+            (tasks || []).filter(t => {
+              if (t.date !== iso || t.done) return false;
+              // Skip personal tasks already represented by a schedule item for this member
+              return !schedItemsForDay.some(si => si.text === t.text && Array.isArray(si.members) && si.members.includes(person));
+            }).map(t => ({
               id: t.id, type: CAT_TO_TYPE[t.category] || 'Meetings',
               text: t.text, members: [person], fromPersonalTask: true, time: t.time, owner: person
             }))
