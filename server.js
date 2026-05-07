@@ -143,6 +143,17 @@ async function createTables() {
         duration    INT
       )
     `],
+    ['idea_bank', `
+      CREATE TABLE IF NOT EXISTS idea_bank (
+        id           SERIAL PRIMARY KEY,
+        title        TEXT NOT NULL,
+        description  TEXT NOT NULL DEFAULT '',
+        category     TEXT NOT NULL,
+        status       TEXT NOT NULL DEFAULT 'New',
+        submitted_by TEXT NOT NULL,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `],
   ];
 
   for (const [name, sql] of tables) {
@@ -180,6 +191,7 @@ const recurringSkips           = [];   // [{ templateId, date }]
 const recurringTeamTasks       = [];
 const recurringTeamCompletions = [];   // [{ templateId, weekIso, completedBy }]
 const userSessions             = [];   // [{ id, userName, loginTime, logoutTime, duration }]
+const ideas                    = [];   // [{ id, title, description, category, status, submittedBy, createdAt }]
 const clients                  = new Map();
 
 async function loadData() {
@@ -275,6 +287,18 @@ async function loadData() {
       templateId: r.template_id, weekIso: r.week_iso, completedBy: r.completed_by
     }));
   } catch (err) { console.error('loadData: FAILED on recurring_team_completions:', err.message); }
+
+  console.log('loadData: querying idea_bank...');
+  try {
+    const rows = await query('SELECT * FROM idea_bank ORDER BY id');
+    console.log(`loadData: idea_bank OK (${rows.length} rows)`);
+    rows.forEach(r => ideas.push({
+      id: r.id, title: r.title, description: r.description,
+      category: r.category, status: r.status,
+      submittedBy: r.submitted_by,
+      createdAt: r.created_at.toISOString()
+    }));
+  } catch (err) { console.error('loadData: FAILED on idea_bank:', err.message); }
 
   console.log('loadData: querying user_sessions (last 30 days)...');
   try {
@@ -428,6 +452,8 @@ const ALLOWED_USERS   = ['Jack', 'Joe', 'Becca'];
 const TASK_TYPES      = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'];
 const TASK_CATEGORIES = ['Create Short', 'Edit Short', 'Create Graphic', 'Edit Long Form'];
 const GOAL_PERIODS    = ['weekly', 'monthly', 'yearly'];
+const IDEA_CATEGORIES = ['Show Format', 'Short Form', 'Long Form', 'Game', 'Sponsorship', 'Other'];
+const IDEA_STATUSES   = ['New', 'In Development', 'Tested', 'Shipped', 'Parked'];
 
 function onlineUsers() {
   return [...clients.values()].filter(u => !u.idle).map(u => u.name);
@@ -494,7 +520,7 @@ wss.on('connection', (ws) => {
           JSON.stringify(userTasks);
           console.log('login: all serialisations OK — sending init...');
 
-          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions });
+          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions, ideas });
           console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
           broadcast({ type: 'sessions_updated', sessions: userSessions });
@@ -891,6 +917,50 @@ wss.on('connection', (ws) => {
             recurringTeamCompletions.push({ templateId: msg.id, weekIso, completedBy: user.name });
           }
           broadcast({ type: 'recurring_team_completions', completions: recurringTeamCompletions });
+          break;
+        }
+
+        case 'add_idea': {
+          if (!user) return;
+          const title       = (msg.title || '').trim();
+          const description = (msg.description || '').trim();
+          const category    = IDEA_CATEGORIES.includes(msg.category) ? msg.category : 'Other';
+          const status      = IDEA_STATUSES.includes(msg.status) ? msg.status : 'New';
+          if (!title) return;
+          const [row] = await query(
+            'INSERT INTO idea_bank (title,description,category,status,submitted_by) VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at',
+            [title, description, category, status, user.name]
+          );
+          ideas.push({
+            id: row.id, title, description, category, status,
+            submittedBy: user.name, createdAt: row.created_at.toISOString()
+          });
+          broadcast({ type: 'ideas_updated', ideas });
+          break;
+        }
+
+        case 'edit_idea': {
+          if (!user) return;
+          const idea = ideas.find(i => i.id === msg.id);
+          if (!idea) return;
+          if (msg.title       !== undefined) idea.title       = (msg.title || '').trim() || idea.title;
+          if (msg.description !== undefined) idea.description = (msg.description || '').trim();
+          if (msg.category    !== undefined && IDEA_CATEGORIES.includes(msg.category)) idea.category = msg.category;
+          if (msg.status      !== undefined && IDEA_STATUSES.includes(msg.status))     idea.status   = msg.status;
+          await query(
+            'UPDATE idea_bank SET title=$1,description=$2,category=$3,status=$4 WHERE id=$5',
+            [idea.title, idea.description, idea.category, idea.status, msg.id]
+          );
+          broadcast({ type: 'ideas_updated', ideas });
+          break;
+        }
+
+        case 'delete_idea': {
+          if (!user) return;
+          await query('DELETE FROM idea_bank WHERE id = $1', [msg.id]);
+          const idx = ideas.findIndex(i => i.id === msg.id);
+          if (idx !== -1) ideas.splice(idx, 1);
+          broadcast({ type: 'ideas_updated', ideas });
           break;
         }
       }

@@ -1412,6 +1412,167 @@
       .tt-week-chart { padding: 14px; }
     }
 
+    /* ─── Idea Bank ─────────────────────────────────────────────────── */
+    .idea-toolbar {
+      display: flex; gap: 10px; align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .idea-search {
+      flex: 1; min-width: 200px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit;
+      color: var(--text); outline: none;
+      transition: border-color .15s;
+    }
+    .idea-search::placeholder { color: var(--muted); }
+    .idea-search:focus { border-color: var(--border-strong); }
+    .idea-filter {
+      padding: 10px 30px 10px 14px;
+      background-color: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-family: inherit;
+      color: var(--text); outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.6)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      transition: border-color .15s;
+    }
+    .idea-filter:focus { border-color: var(--border-strong); }
+
+    .idea-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .idea-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      position: relative;
+      transition: border-color .15s, transform .1s;
+      animation: slideDown .18s ease;
+    }
+    .idea-card:hover { border-color: var(--border-strong); }
+    .idea-card.expanded { border-color: var(--border-strong); }
+    .idea-card-head {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 8px;
+    }
+    .idea-title {
+      flex: 1; font-size: 15px; font-weight: 700;
+      color: var(--text-strong); letter-spacing: -.005em;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .idea-actions {
+      display: flex; gap: 4px; flex-shrink: 0;
+      opacity: 0; transition: opacity .15s;
+    }
+    .idea-card:hover .idea-actions { opacity: 1; }
+    .idea-action-btn {
+      width: 28px; height: 28px; border: none;
+      background: transparent; cursor: pointer;
+      border-radius: var(--radius-sm); color: var(--muted);
+      font-size: 13px; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s, transform .1s;
+    }
+    .idea-action-btn:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .idea-action-btn.del:hover { background: var(--danger-bg); color: var(--danger); }
+    .idea-action-btn:active { transform: scale(.95); }
+    .idea-action-btn svg { width: 13px; height: 13px; pointer-events: none; }
+
+    .idea-meta {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .idea-cat-badge, .idea-status-badge {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      padding: 3px 9px; border-radius: 100px;
+      white-space: nowrap;
+    }
+    .idea-cat-badge.cat-show-format    { background: rgba(6,182,212,.15);  color: #06B6D4; }
+    .idea-cat-badge.cat-short-form     { background: rgba(139,92,246,.15); color: #8B5CF6; }
+    .idea-cat-badge.cat-long-form      { background: rgba(16,185,129,.15); color: #10B981; }
+    .idea-cat-badge.cat-game           { background: rgba(249,115,22,.15); color: #F97316; }
+    .idea-cat-badge.cat-sponsorship    { background: rgba(236,72,153,.15); color: #EC4899; }
+    .idea-cat-badge.cat-other          { background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
+
+    .idea-status-badge.st-new             { background: rgba(6,182,212,.15);  color: #06B6D4; }
+    .idea-status-badge.st-in-development  { background: rgba(245,158,11,.15); color: #F59E0B; }
+    .idea-status-badge.st-tested          { background: rgba(139,92,246,.15); color: #8B5CF6; }
+    .idea-status-badge.st-shipped         { background: rgba(34,197,94,.15);  color: #22C55E; }
+    .idea-status-badge.st-parked          { background: rgba(255,255,255,.06); color: var(--muted-soft); border: 1px solid var(--border); }
+
+    .idea-desc-preview {
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .idea-card.expanded .idea-desc-preview {
+      display: block; -webkit-line-clamp: unset;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .idea-card.expanded .idea-desc-preview:empty::before {
+      content: 'No description.';
+      color: var(--muted-soft); font-style: italic;
+    }
+
+    .idea-foot {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--muted);
+    }
+    .idea-by {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 600; letter-spacing: .03em;
+    }
+    .idea-by-av {
+      width: 22px; height: 22px; border-radius: 50%;
+      font-size: 10px; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; letter-spacing: -.01em;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.1); color: var(--text);
+    }
+    .idea-by-av.person-jack  { background: var(--jack-bg);  color: var(--jack);  border-color: var(--jack); }
+    .idea-by-av.person-joe   { background: var(--joe-bg);   color: var(--joe);   border-color: var(--joe); }
+    .idea-by-av.person-becca { background: var(--becca-bg); color: var(--becca); border-color: var(--becca); }
+    .idea-date { margin-left: auto; font-weight: 600; }
+
+    .idea-empty {
+      grid-column: 1 / -1;
+      padding: 56px 32px; text-align: center;
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--muted-soft); font-size: 13px;
+    }
+    .idea-empty .idea-empty-title {
+      font-size: 15px; font-weight: 600; color: var(--muted-soft);
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 600px) {
+      .idea-grid { grid-template-columns: 1fr; }
+      .idea-toolbar { gap: 8px; }
+      .idea-search { min-width: 0; }
+    }
+
     /* Daily quota reminder */
     .daily-quota-note {
       display: flex; align-items: center; gap: 10px;
@@ -1520,6 +1681,7 @@
     <button class="tab"        data-tab="shorts"     onclick="switchTab('shorts')">Shorts Filmed</button>
     <button class="tab"        data-tab="longforms"  onclick="switchTab('longforms')">Long Forms Filmed</button>
     <button class="tab"        data-tab="timetracking" onclick="switchTab('timetracking')">Time Tracking</button>
+    <button class="tab"        data-tab="ideabank"   onclick="switchTab('ideabank')">Idea Bank</button>
     <button class="tab"        data-tab="goals"      onclick="switchTab('goals')">Goals</button>
   </div>
 
@@ -1688,6 +1850,38 @@
       </div>
     </div>
 
+    <!-- Idea Bank -->
+    <div class="tab-panel" id="panel-ideabank">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Idea Bank</div>
+          <div class="panel-desc">Shared content ideas &amp; format concepts</div>
+        </div>
+        <button type="button" class="btn-primary" onclick="openIdeaModal()">+ Add Idea</button>
+      </div>
+      <div class="idea-toolbar">
+        <input type="text" class="idea-search" id="idea-search" placeholder="Search ideas..." autocomplete="off">
+        <select class="idea-filter" id="idea-filter-category">
+          <option value="all">All categories</option>
+          <option value="Show Format">Show Format</option>
+          <option value="Short Form">Short Form</option>
+          <option value="Long Form">Long Form</option>
+          <option value="Game">Game</option>
+          <option value="Sponsorship">Sponsorship</option>
+          <option value="Other">Other</option>
+        </select>
+        <select class="idea-filter" id="idea-filter-status">
+          <option value="all">All statuses</option>
+          <option value="New">New</option>
+          <option value="In Development">In Development</option>
+          <option value="Tested">Tested</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Parked">Parked</option>
+        </select>
+      </div>
+      <div class="idea-grid" id="idea-grid"></div>
+    </div>
+
     <!-- Goals -->
     <div class="tab-panel" id="panel-goals">
       <div class="panel-header">
@@ -1825,6 +2019,39 @@
   </div>
 </div>
 
+<!-- Idea Bank modal -->
+<div class="modal-bg" id="idea-modal-bg" onclick="handleIdeaModalBgClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="idea-modal-title">Add Idea</div>
+    <div class="modal-sub"   id="idea-modal-sub"></div>
+    <label class="form-label">Title</label>
+    <input class="modal-input" type="text" id="idea-modal-title-input" placeholder="Idea title..." maxlength="200" autocomplete="off">
+    <label class="form-label">Description</label>
+    <textarea class="modal-textarea" id="idea-modal-description" placeholder="Describe the idea..." maxlength="2000" rows="5"></textarea>
+    <label class="form-label">Category</label>
+    <select class="modal-input" id="idea-modal-category">
+      <option value="Show Format">Show Format</option>
+      <option value="Short Form">Short Form</option>
+      <option value="Long Form">Long Form</option>
+      <option value="Game">Game</option>
+      <option value="Sponsorship">Sponsorship</option>
+      <option value="Other">Other</option>
+    </select>
+    <label class="form-label">Status</label>
+    <select class="modal-input" id="idea-modal-status">
+      <option value="New">New</option>
+      <option value="In Development">In Development</option>
+      <option value="Tested">Tested</option>
+      <option value="Shipped">Shipped</option>
+      <option value="Parked">Parked</option>
+    </select>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost"   onclick="closeIdeaModal()">Cancel</button>
+      <button type="button" class="btn-primary" id="idea-modal-submit" onclick="submitIdea()">Add Idea</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1861,6 +2088,12 @@
   let idleTimer                = null;
   let isIdle                   = false;
   const IDLE_MS                = 15 * 60 * 1000;
+  let ideas                    = [];
+  let ideaFilterCategory       = 'all';
+  let ideaFilterStatus         = 'all';
+  let ideaSearch               = '';
+  let editingIdeaId            = null;
+  const expandedIdeas          = new Set();
   let shortsLog         = [];
   let shortDetailId       = null;
   let selectedShortMembers = [];
@@ -1972,6 +2205,7 @@
     if (tab === 'shorts')       renderShorts(shortsLog);
     if (tab === 'longforms')    renderLongForms(longFormsLog);
     if (tab === 'timetracking') renderTimeTracking();
+    if (tab === 'ideabank')     renderIdeas();
     if (tab === 'goals')        renderGoals(goals);
   }
 
@@ -3638,6 +3872,190 @@
     if (activeTab === 'timetracking') renderTimeTracking();
   }, 60000);
 
+  // ── Idea Bank ─────────────────────────────────────────────────────────
+  function ideaCatClass(category) {
+    return 'cat-' + category.toLowerCase().replace(/\s+/g, '-');
+  }
+  function ideaStatusClass(status) {
+    return 'st-' + status.toLowerCase().replace(/\s+/g, '-');
+  }
+  function ideaInitials(name) {
+    return MEMBER_INITIALS[name] || name.slice(0, 2).toUpperCase();
+  }
+  function formatIdeaDate(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const opts = (d.getFullYear() === now.getFullYear())
+      ? { month: 'short', day: 'numeric' }
+      : { month: 'short', day: 'numeric', year: 'numeric' };
+    return d.toLocaleDateString('en-US', opts);
+  }
+  function ideaMatchesFilters(idea) {
+    if (ideaFilterCategory !== 'all' && idea.category !== ideaFilterCategory) return false;
+    if (ideaFilterStatus   !== 'all' && idea.status   !== ideaFilterStatus)   return false;
+    if (ideaSearch) {
+      const q = ideaSearch.toLowerCase();
+      const hay = (idea.title + ' ' + (idea.description || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }
+
+  function renderIdeas() {
+    const grid = document.getElementById('idea-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const filtered = ideas
+      .filter(ideaMatchesFilters)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'idea-empty';
+      const total = ideas.length;
+      empty.innerHTML = total
+        ? '<div class="idea-empty-title">No matches</div>Try clearing filters or search.'
+        : '<div class="idea-empty-title">No ideas yet</div>Click "+ Add Idea" to capture the first one.';
+      grid.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(idea => grid.appendChild(makeIdeaCard(idea)));
+  }
+
+  function makeIdeaCard(idea) {
+    const card = document.createElement('div');
+    const isOpen = expandedIdeas.has(idea.id);
+    card.className = 'idea-card' + (isOpen ? ' expanded' : '');
+
+    const head = document.createElement('div');
+    head.className = 'idea-card-head';
+    const title = document.createElement('div');
+    title.className = 'idea-title';
+    title.textContent = idea.title;
+    head.appendChild(title);
+
+    const actions = document.createElement('div');
+    actions.className = 'idea-actions';
+    const editBtn = document.createElement('button');
+    editBtn.className = 'idea-action-btn';
+    editBtn.title = 'Edit';
+    editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
+    editBtn.addEventListener('click', (e) => { e.stopPropagation(); openIdeaModal(idea); });
+    actions.appendChild(editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'idea-action-btn del';
+    delBtn.title = 'Delete';
+    delBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h10M5 3.5V2.5h4v1M5.5 6v4M8.5 6v4M3 3.5l.7 7.5a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-7.5"/></svg>`;
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm('Delete this idea?')) return;
+      send('delete_idea', { id: idea.id });
+      const idx = ideas.findIndex(i => i.id === idea.id);
+      if (idx !== -1) ideas.splice(idx, 1);
+      renderIdeas();
+    });
+    actions.appendChild(delBtn);
+    head.appendChild(actions);
+    card.appendChild(head);
+
+    const meta = document.createElement('div');
+    meta.className = 'idea-meta';
+    const cat = document.createElement('span');
+    cat.className = 'idea-cat-badge ' + ideaCatClass(idea.category);
+    cat.textContent = idea.category;
+    meta.appendChild(cat);
+    const status = document.createElement('span');
+    status.className = 'idea-status-badge ' + ideaStatusClass(idea.status);
+    status.textContent = idea.status;
+    meta.appendChild(status);
+    card.appendChild(meta);
+
+    const desc = document.createElement('div');
+    desc.className = 'idea-desc-preview';
+    desc.textContent = idea.description || '';
+    card.appendChild(desc);
+
+    const foot = document.createElement('div');
+    foot.className = 'idea-foot';
+    const by = document.createElement('span');
+    by.className = 'idea-by';
+    const av = document.createElement('span');
+    av.className = 'idea-by-av ' + personClass(idea.submittedBy);
+    av.textContent = ideaInitials(idea.submittedBy);
+    by.appendChild(av);
+    by.appendChild(document.createTextNode(idea.submittedBy));
+    foot.appendChild(by);
+    const date = document.createElement('span');
+    date.className = 'idea-date';
+    date.textContent = formatIdeaDate(idea.createdAt);
+    foot.appendChild(date);
+    card.appendChild(foot);
+
+    card.addEventListener('click', () => {
+      if (expandedIdeas.has(idea.id)) expandedIdeas.delete(idea.id);
+      else expandedIdeas.add(idea.id);
+      renderIdeas();
+    });
+
+    return card;
+  }
+
+  function openIdeaModal(idea) {
+    editingIdeaId = idea ? idea.id : null;
+    document.getElementById('idea-modal-title').textContent = idea ? 'Edit Idea' : 'Add Idea';
+    document.getElementById('idea-modal-sub').textContent   = idea ? ('Submitted by ' + idea.submittedBy) : '';
+    document.getElementById('idea-modal-submit').textContent = idea ? 'Save Changes' : 'Add Idea';
+    document.getElementById('idea-modal-title-input').value = idea ? idea.title : '';
+    document.getElementById('idea-modal-description').value = idea ? (idea.description || '') : '';
+    document.getElementById('idea-modal-category').value    = idea ? idea.category : 'Show Format';
+    document.getElementById('idea-modal-status').value      = idea ? idea.status : 'New';
+    document.getElementById('idea-modal-bg').classList.add('open');
+    setTimeout(() => document.getElementById('idea-modal-title-input').focus(), 50);
+  }
+  function closeIdeaModal() {
+    document.getElementById('idea-modal-bg').classList.remove('open');
+    editingIdeaId = null;
+  }
+  function handleIdeaModalBgClick(e) {
+    if (e.target === document.getElementById('idea-modal-bg')) closeIdeaModal();
+  }
+  function submitIdea() {
+    const title       = document.getElementById('idea-modal-title-input').value.trim();
+    const description = document.getElementById('idea-modal-description').value.trim();
+    const category    = document.getElementById('idea-modal-category').value;
+    const status      = document.getElementById('idea-modal-status').value;
+    if (!title) { document.getElementById('idea-modal-title-input').focus(); return; }
+
+    if (editingIdeaId !== null) {
+      const idea = ideas.find(i => i.id === editingIdeaId);
+      if (idea) { idea.title = title; idea.description = description; idea.category = category; idea.status = status; }
+      send('edit_idea', { id: editingIdeaId, title, description, category, status });
+    } else {
+      // Optimistic temp entry
+      ideas.push({
+        id: -(Date.now()), title, description, category, status,
+        submittedBy: myName, createdAt: new Date().toISOString()
+      });
+      send('add_idea', { title, description, category, status });
+    }
+    closeIdeaModal();
+    renderIdeas();
+  }
+
+  // Filter / search wiring (deferred to DOMContentLoaded so the inputs exist)
+  function wireIdeaToolbar() {
+    const cat = document.getElementById('idea-filter-category');
+    const st  = document.getElementById('idea-filter-status');
+    const sr  = document.getElementById('idea-search');
+    if (!cat || !st || !sr) return;
+    cat.addEventListener('change', () => { ideaFilterCategory = cat.value; renderIdeas(); });
+    st.addEventListener('change',  () => { ideaFilterStatus   = st.value;  renderIdeas(); });
+    sr.addEventListener('input',   () => { ideaSearch         = sr.value;  renderIdeas(); });
+  }
+  wireIdeaToolbar();
+
   // ── WebSocket ──────────────────────────────────────────────────────────
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -3660,6 +4078,7 @@
           recurringCompletions   = msg.recurringTeamCompletions  || [];
           userSessions           = msg.userSessions              || [];
           onlineNames            = new Set(msg.onlineUsers || []);
+          ideas                  = msg.ideas                      || [];
           allPersonalTasks = msg.allPersonalTasks || {};
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
@@ -3713,6 +4132,10 @@
         case 'sessions_updated':
           userSessions = msg.sessions || [];
           if (activeTab === 'timetracking') renderTimeTracking();
+          break;
+        case 'ideas_updated':
+          ideas = msg.ideas || [];
+          if (activeTab === 'ideabank') renderIdeas();
           break;
       }
     };
