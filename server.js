@@ -134,6 +134,15 @@ async function createTables() {
         PRIMARY KEY (template_id, week_iso)
       )
     `],
+    ['user_sessions', `
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id          SERIAL PRIMARY KEY,
+        user_name   TEXT NOT NULL,
+        login_time  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        logout_time TIMESTAMPTZ,
+        duration    INT
+      )
+    `],
   ];
 
   for (const [name, sql] of tables) {
@@ -170,6 +179,7 @@ const recurringSchedule        = [];
 const recurringSkips           = [];   // [{ templateId, date }]
 const recurringTeamTasks       = [];
 const recurringTeamCompletions = [];   // [{ templateId, weekIso, completedBy }]
+const userSessions             = [];   // [{ id, userName, loginTime, logoutTime, duration }]
 const clients                  = new Map();
 
 async function loadData() {
@@ -266,7 +276,71 @@ async function loadData() {
     }));
   } catch (err) { console.error('loadData: FAILED on recurring_team_completions:', err.message); }
 
+  console.log('loadData: querying user_sessions (last 30 days)...');
+  try {
+    const rows = await query(`
+      SELECT * FROM user_sessions
+      WHERE login_time > NOW() - INTERVAL '30 days'
+      ORDER BY login_time
+    `);
+    console.log(`loadData: user_sessions OK (${rows.length} rows)`);
+    rows.forEach(r => userSessions.push({
+      id: r.id,
+      userName: r.user_name,
+      loginTime: r.login_time.toISOString(),
+      logoutTime: r.logout_time ? r.logout_time.toISOString() : null,
+      duration: r.duration
+    }));
+  } catch (err) { console.error('loadData: FAILED on user_sessions:', err.message); }
+
   console.log('loadData: done');
+}
+
+// ── Session lifecycle ──────────────────────────────────────────────────────
+// On boot, cap any orphaned sessions (server crashed mid-session) at +5 min
+async function recoverOrphanedSessions() {
+  try {
+    const rows = await query(`
+      UPDATE user_sessions
+      SET logout_time = login_time + INTERVAL '5 minutes',
+          duration    = 300
+      WHERE logout_time IS NULL
+      RETURNING id
+    `);
+    if (rows.length) console.log(`recoverOrphanedSessions: capped ${rows.length} orphaned session(s)`);
+  } catch (err) { console.error('recoverOrphanedSessions: FAILED:', err.message); }
+}
+
+// Close any open session(s) for a user, both in DB and in memory.
+async function closeOpenSessions(userName) {
+  const now = new Date();
+  await query(`
+    UPDATE user_sessions
+    SET logout_time = $1,
+        duration    = GREATEST(EXTRACT(EPOCH FROM ($1::timestamptz - login_time))::int, 0)
+    WHERE user_name = $2 AND logout_time IS NULL
+  `, [now, userName]);
+  for (const s of userSessions) {
+    if (s.userName === userName && !s.logoutTime) {
+      s.logoutTime = now.toISOString();
+      s.duration = Math.max(0, Math.round((now - new Date(s.loginTime)) / 1000));
+    }
+  }
+}
+
+// Open a fresh session. Returns the session object pushed into in-memory state.
+async function openSession(userName) {
+  const now = new Date();
+  const [row] = await query(
+    'INSERT INTO user_sessions (user_name, login_time) VALUES ($1, $2) RETURNING id',
+    [userName, now]
+  );
+  const session = {
+    id: row.id, userName, loginTime: now.toISOString(),
+    logoutTime: null, duration: null,
+  };
+  userSessions.push(session);
+  return session;
 }
 
 // ── Recurring seed ─────────────────────────────────────────────────────────
@@ -355,7 +429,9 @@ const TASK_TYPES      = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'
 const TASK_CATEGORIES = ['Create Short', 'Edit Short', 'Create Graphic', 'Edit Long Form'];
 const GOAL_PERIODS    = ['weekly', 'monthly', 'yearly'];
 
-function onlineUsers() { return [...clients.values()].map(u => u.name); }
+function onlineUsers() {
+  return [...clients.values()].filter(u => !u.idle).map(u => u.name);
+}
 function send(ws, msg) {
   if (ws.readyState !== ws.OPEN) return;
   try { ws.send(JSON.stringify(msg)); } catch (err) { console.error('send() error:', err.message); }
@@ -387,7 +463,11 @@ wss.on('connection', (ws) => {
           const name = (msg.name || '').trim();
           if (!ALLOWED_USERS.includes(name)) return;
           if (!userTasks[name]) userTasks[name] = [];
-          clients.set(ws, { name });
+          clients.set(ws, { name, idle: false });
+
+          // Time tracking: only one active session per user — close any prior, open a new one
+          await closeOpenSessions(name);
+          await openSession(name);
 
           console.log(`login: building init payload for ${name}`);
           console.log(`login: teamTasks        count=${teamTasks.length}`);
@@ -414,10 +494,35 @@ wss.on('connection', (ws) => {
           JSON.stringify(userTasks);
           console.log('login: all serialisations OK — sending init...');
 
-          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions });
+          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions });
           console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
+          broadcast({ type: 'sessions_updated', sessions: userSessions });
           console.log('login: done');
+          break;
+        }
+
+        case 'idle': {
+          if (!user) return;
+          const c = clients.get(ws);
+          if (!c || c.idle) return;
+          c.idle = true;
+          await closeOpenSessions(user.name);
+          broadcast({ type: 'presence', onlineUsers: onlineUsers(), left: user.name });
+          broadcast({ type: 'sessions_updated', sessions: userSessions });
+          break;
+        }
+
+        case 'resume': {
+          if (!user) return;
+          const c = clients.get(ws);
+          if (!c || !c.idle) return;
+          c.idle = false;
+          // Should not have an open session (idle closed it), but guard anyway
+          await closeOpenSessions(user.name);
+          await openSession(user.name);
+          broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: user.name });
+          broadcast({ type: 'sessions_updated', sessions: userSessions });
           break;
         }
 
@@ -794,12 +899,18 @@ wss.on('connection', (ws) => {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     try {
       const user = clients.get(ws);
       clients.delete(ws);
       if (user) {
         console.log('WS: client disconnected:', user.name);
+        // Time tracking: close session unless this user has another active connection
+        const stillConnected = [...clients.values()].some(c => c.name === user.name);
+        if (!stillConnected) {
+          await closeOpenSessions(user.name);
+          broadcast({ type: 'sessions_updated', sessions: userSessions });
+        }
         broadcast({ type: 'presence', onlineUsers: onlineUsers(), left: user.name });
       }
     } catch (err) {
@@ -814,6 +925,7 @@ const PORT = process.env.PORT || 3000;
 async function start() {
   await createTables();
   await seedRecurring();
+  await recoverOrphanedSessions();
   await loadData();
   server.listen(PORT, () => console.log(`\n  Stadium Status Workplace → http://localhost:${PORT}\n`));
 }

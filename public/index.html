@@ -1304,6 +1304,114 @@
       white-space: nowrap; flex-shrink: 0;
     }
 
+    /* ─── Time Tracking tab ─────────────────────────────────────────── */
+    .tt-section { margin-bottom: 32px; }
+    .tt-section-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--muted); margin-bottom: 12px;
+    }
+    .tt-status-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    .tt-status-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--muted);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: var(--shadow);
+      position: relative; overflow: hidden;
+      transition: border-color .15s;
+    }
+    .tt-status-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, var(--glow,transparent) 0%, transparent 60%);
+      opacity: .6; pointer-events: none;
+    }
+    .tt-status-card.status-jack  { border-left-color: var(--jack);  --glow: var(--jack-bg); }
+    .tt-status-card.status-joe   { border-left-color: var(--joe);   --glow: var(--joe-bg); }
+    .tt-status-card.status-becca { border-left-color: var(--becca); --glow: var(--becca-bg); }
+    .tt-status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,.25); flex-shrink: 0;
+      position: relative; z-index: 1;
+    }
+    .tt-status-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.2);
+    }
+    .tt-status-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; position: relative; z-index: 1; }
+    .tt-name {
+      font-size: 15px; font-weight: 700;
+      color: var(--text-strong); letter-spacing: -.01em;
+    }
+    .tt-substatus {
+      font-size: 12px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tt-substatus .tt-online-tag { color: var(--success); font-weight: 600; }
+
+    .tt-week-chart {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 18px;
+    }
+    .tt-week-row {
+      display: flex; gap: 16px; align-items: stretch;
+    }
+    .tt-week-name {
+      width: 60px; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      flex-shrink: 0; align-self: flex-end; padding-bottom: 22px;
+    }
+    .tt-week-name.person-jack  { color: var(--jack); }
+    .tt-week-name.person-joe   { color: var(--joe); }
+    .tt-week-name.person-becca { color: var(--becca); }
+    .tt-week-bars {
+      flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    }
+    .tt-week-day {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      height: 110px;
+    }
+    .tt-bar-track {
+      flex: 1; width: 100%;
+      background: rgba(255,255,255,.04);
+      border-radius: 4px;
+      display: flex; align-items: flex-end;
+      overflow: hidden;
+    }
+    .tt-bar {
+      width: 100%; background: var(--muted);
+      border-radius: 4px 4px 0 0;
+      transition: height .3s ease;
+      min-height: 0;
+    }
+    .tt-bar.person-jack  { background: var(--jack);  box-shadow: 0 0 12px var(--jack-bg); }
+    .tt-bar.person-joe   { background: var(--joe);   box-shadow: 0 0 12px var(--joe-bg); }
+    .tt-bar.person-becca { background: var(--becca); box-shadow: 0 0 12px var(--becca-bg); }
+    .tt-bar.is-today { outline: 1px solid white; outline-offset: -1px; }
+    .tt-day-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--muted);
+    }
+    .tt-day-hours {
+      font-size: 10px; color: var(--muted-soft); font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .tt-status-grid { grid-template-columns: 1fr; }
+      .tt-week-name { width: 44px; font-size: 11px; padding-bottom: 18px; }
+      .tt-week-day { height: 80px; }
+      .tt-week-chart { padding: 14px; }
+    }
+
     /* Daily quota reminder */
     .daily-quota-note {
       display: flex; align-items: center; gap: 10px;
@@ -1411,6 +1519,7 @@
     <button class="tab"        data-tab="schedule"   onclick="switchTab('schedule')">Schedule</button>
     <button class="tab"        data-tab="shorts"     onclick="switchTab('shorts')">Shorts Filmed</button>
     <button class="tab"        data-tab="longforms"  onclick="switchTab('longforms')">Long Forms Filmed</button>
+    <button class="tab"        data-tab="timetracking" onclick="switchTab('timetracking')">Time Tracking</button>
     <button class="tab"        data-tab="goals"      onclick="switchTab('goals')">Goals</button>
   </div>
 
@@ -1559,6 +1668,24 @@
         </div>
       </form>
       <div class="task-list" id="longforms-list"></div>
+    </div>
+
+    <!-- Time Tracking -->
+    <div class="tab-panel" id="panel-timetracking">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Time Tracking</div>
+          <div class="panel-desc">Login activity &amp; weekly hours · all times EST</div>
+        </div>
+      </div>
+      <div class="tt-section">
+        <div class="tt-section-title">Status</div>
+        <div class="tt-status-grid" id="tt-status-grid"></div>
+      </div>
+      <div class="tt-section">
+        <div class="tt-section-title">This Week</div>
+        <div class="tt-week-chart" id="tt-week-chart"></div>
+      </div>
     </div>
 
     <!-- Goals -->
@@ -1729,6 +1856,11 @@
   let recurringCompletions     = [];   // [{templateId, weekIso, completedBy}]
   let editingRecurringId       = null; // template id when editing a recurring series
   let editingRecurringSkipDate = null; // iso date the user clicked into
+  let userSessions             = [];   // [{id, userName, loginTime, logoutTime, duration}]
+  let onlineNames              = new Set();
+  let idleTimer                = null;
+  let isIdle                   = false;
+  const IDLE_MS                = 15 * 60 * 1000;
   let shortsLog         = [];
   let shortDetailId       = null;
   let selectedShortMembers = [];
@@ -1836,10 +1968,11 @@
     activeTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-    if (tab === 'schedule')  buildSchedule();
-    if (tab === 'shorts')    renderShorts(shortsLog);
-    if (tab === 'longforms') renderLongForms(longFormsLog);
-    if (tab === 'goals')     renderGoals(goals);
+    if (tab === 'schedule')     buildSchedule();
+    if (tab === 'shorts')       renderShorts(shortsLog);
+    if (tab === 'longforms')    renderLongForms(longFormsLog);
+    if (tab === 'timetracking') renderTimeTracking();
+    if (tab === 'goals')        renderGoals(goals);
   }
 
   // ── Avatars ────────────────────────────────────────────────────────────
@@ -3317,6 +3450,194 @@
     renderGoals(goals);
   }
 
+  // ── Time Tracking ─────────────────────────────────────────────────────
+  const TT_USERS = ['Jack', 'Joe', 'Becca'];
+  const TT_DOW   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  // Format a Date (or ISO string) as 'YYYY-MM-DD' in EST (America/New_York)
+  function estDateKey(date) {
+    const d = (date instanceof Date) ? date : new Date(date);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(d);
+  }
+
+  // Returns an array of 7 EST date keys: [Mon..Sun] for the current EST week
+  function estWeekDays() {
+    const todayKey = estDateKey(new Date());
+    // Use noon UTC of the EST date to pin a calendar weekday safely
+    const base = new Date(todayKey + 'T12:00:00Z');
+    const dayIdx = base.getUTCDay(); // 0=Sun..6=Sat
+    const mondayOffset = (dayIdx + 6) % 7;
+    const days = [];
+    for (let i = -mondayOffset; i < -mondayOffset + 7; i++) {
+      const d = new Date(base);
+      d.setUTCDate(base.getUTCDate() + i);
+      days.push(estDateKey(d));
+    }
+    return days;
+  }
+
+  // Sum seconds for a user on a given EST date key. Open sessions tick to "now".
+  function sumSecondsForDay(userName, dayKey) {
+    let sec = 0;
+    const now = Date.now();
+    for (const s of userSessions) {
+      if (s.userName !== userName) continue;
+      if (estDateKey(s.loginTime) !== dayKey) continue;
+      const start = new Date(s.loginTime).getTime();
+      const end   = s.logoutTime ? new Date(s.logoutTime).getTime() : now;
+      sec += Math.max(0, (end - start) / 1000);
+    }
+    return sec;
+  }
+
+  function formatHours(sec) {
+    if (sec < 60) return '0m';
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+  }
+
+  function formatRelative(iso) {
+    const ms = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(ms / 60000);
+    if (min < 1)  return 'just now';
+    if (min < 60) return min + 'm ago';
+    const h = Math.floor(min / 60);
+    if (h < 24)   return h + 'h ago';
+    const d = Math.floor(h / 24);
+    return d + 'd ago';
+  }
+
+  function renderTimeTracking() {
+    const statusEl = document.getElementById('tt-status-grid');
+    const weekEl   = document.getElementById('tt-week-chart');
+    if (!statusEl || !weekEl) return;
+
+    const todayKey = estDateKey(new Date());
+    const weekDays = estWeekDays();
+
+    // ── Status cards ─────────────────────────────────────────────────
+    statusEl.innerHTML = '';
+    TT_USERS.forEach(name => {
+      const isOnline = onlineNames.has(name);
+      const todaySec = sumSecondsForDay(name, todayKey);
+      const lastSession = userSessions
+        .filter(s => s.userName === name && s.logoutTime)
+        .sort((a, b) => new Date(b.logoutTime) - new Date(a.logoutTime))[0];
+
+      const card = document.createElement('div');
+      card.className = 'tt-status-card status-' + name.toLowerCase();
+
+      const dot = document.createElement('span');
+      dot.className = 'tt-status-dot' + (isOnline ? ' online' : '');
+      card.appendChild(dot);
+
+      const text = document.createElement('div');
+      text.className = 'tt-status-text';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'tt-name';
+      nameEl.textContent = name;
+      text.appendChild(nameEl);
+
+      const sub = document.createElement('div');
+      sub.className = 'tt-substatus';
+      let statusLabel;
+      if (isOnline) {
+        statusLabel = '<span class="tt-online-tag">Online</span>';
+      } else if (lastSession) {
+        statusLabel = 'Last online: ' + formatRelative(lastSession.logoutTime);
+      } else {
+        statusLabel = 'Never online';
+      }
+      sub.innerHTML = statusLabel + ' &middot; ' + formatHours(todaySec) + ' today';
+      text.appendChild(sub);
+      card.appendChild(text);
+
+      statusEl.appendChild(card);
+    });
+
+    // ── Weekly chart ────────────────────────────────────────────────
+    weekEl.innerHTML = '';
+    let maxSec = 0;
+    TT_USERS.forEach(name => {
+      weekDays.forEach(d => {
+        const s = sumSecondsForDay(name, d);
+        if (s > maxSec) maxSec = s;
+      });
+    });
+    if (maxSec === 0) maxSec = 3600; // floor at 1h scale so empty weeks don't divide-by-zero
+
+    TT_USERS.forEach(name => {
+      const row = document.createElement('div');
+      row.className = 'tt-week-row';
+      const label = document.createElement('div');
+      label.className = 'tt-week-name person-' + name.toLowerCase();
+      label.textContent = name;
+      row.appendChild(label);
+
+      const bars = document.createElement('div');
+      bars.className = 'tt-week-bars';
+      weekDays.forEach((d, i) => {
+        const sec = sumSecondsForDay(name, d);
+        const pct = Math.min(100, (sec / maxSec) * 100);
+        const cell = document.createElement('div');
+        cell.className = 'tt-week-day';
+
+        const track = document.createElement('div');
+        track.className = 'tt-bar-track';
+        const bar = document.createElement('div');
+        bar.className = 'tt-bar person-' + name.toLowerCase() + (d === todayKey ? ' is-today' : '');
+        bar.style.height = pct + '%';
+        track.appendChild(bar);
+        cell.appendChild(track);
+
+        const dl = document.createElement('span');
+        dl.className = 'tt-day-label';
+        dl.textContent = TT_DOW[i];
+        cell.appendChild(dl);
+
+        const dh = document.createElement('span');
+        dh.className = 'tt-day-hours';
+        dh.textContent = formatHours(sec);
+        cell.appendChild(dh);
+
+        cell.title = name + ' · ' + d + ' · ' + formatHours(sec);
+        bars.appendChild(cell);
+      });
+      row.appendChild(bars);
+      weekEl.appendChild(row);
+    });
+  }
+
+  // ── Idle detection ────────────────────────────────────────────────────
+  function setupIdleDetection() {
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    function reset() {
+      if (isIdle) {
+        isIdle = false;
+        send('resume');
+      }
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(goIdle, IDLE_MS);
+    }
+    function goIdle() {
+      if (isIdle) return;
+      isIdle = true;
+      send('idle');
+    }
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+  }
+
+  // Re-render every minute so relative timestamps and ticking sessions stay current
+  setInterval(() => {
+    if (activeTab === 'timetracking') renderTimeTracking();
+  }, 60000);
+
   // ── WebSocket ──────────────────────────────────────────────────────────
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -3337,6 +3658,8 @@
           recurringSkips         = msg.recurringSkips            || [];
           recurringTeamTasksList = msg.recurringTeamTasks        || [];
           recurringCompletions   = msg.recurringTeamCompletions  || [];
+          userSessions           = msg.userSessions              || [];
+          onlineNames            = new Set(msg.onlineUsers || []);
           allPersonalTasks = msg.allPersonalTasks || {};
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
@@ -3381,9 +3704,15 @@
           if (activeTab === 'goals') renderGoals(goals);
           break;
         case 'presence':
+          onlineNames = new Set(msg.onlineUsers || []);
           renderAvatars(msg.onlineUsers);
           if (msg.joined && msg.joined !== myName) toast(msg.joined + ' joined');
-          if (msg.left) toast(msg.left + ' left');
+          if (msg.left && msg.left !== myName) toast(msg.left + ' left');
+          if (activeTab === 'timetracking') renderTimeTracking();
+          break;
+        case 'sessions_updated':
+          userSessions = msg.sessions || [];
+          if (activeTab === 'timetracking') renderTimeTracking();
           break;
       }
     };
@@ -3400,6 +3729,7 @@
     loginScreen.classList.add('hidden');
     appEl.classList.add('visible');
     document.getElementById('personal-assign').style.display = name === 'Jack' ? 'flex' : 'none';
+    setupIdleDetection();
     connect();
   }
 </script>
