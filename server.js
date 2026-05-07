@@ -101,6 +101,39 @@ async function createTables() {
         added_by TEXT NOT NULL
       )
     `],
+    ['recurring_schedule', `
+      CREATE TABLE IF NOT EXISTS recurring_schedule (
+        id          SERIAL PRIMARY KEY,
+        day_of_week INT NOT NULL,
+        time        TEXT,
+        type        TEXT NOT NULL,
+        text        TEXT NOT NULL,
+        members     TEXT NOT NULL DEFAULT '[]',
+        alternate   BOOLEAN NOT NULL DEFAULT FALSE,
+        description TEXT
+      )
+    `],
+    ['recurring_schedule_skips', `
+      CREATE TABLE IF NOT EXISTS recurring_schedule_skips (
+        template_id INT NOT NULL,
+        date        TEXT NOT NULL,
+        PRIMARY KEY (template_id, date)
+      )
+    `],
+    ['recurring_team_tasks', `
+      CREATE TABLE IF NOT EXISTS recurring_team_tasks (
+        id   SERIAL PRIMARY KEY,
+        text TEXT NOT NULL
+      )
+    `],
+    ['recurring_team_completions', `
+      CREATE TABLE IF NOT EXISTS recurring_team_completions (
+        template_id  INT NOT NULL,
+        week_iso     TEXT NOT NULL,
+        completed_by TEXT,
+        PRIMARY KEY (template_id, week_iso)
+      )
+    `],
   ];
 
   for (const [name, sql] of tables) {
@@ -127,13 +160,17 @@ async function createTables() {
 }
 
 // ── In-memory state ────────────────────────────────────────────────────────
-const userTasks     = {};
-const teamTasks     = [];
-const scheduleItems = [];
-const shortsLog     = [];
-const longFormsLog  = [];
-const goals         = [];
-const clients       = new Map();
+const userTasks                = {};
+const teamTasks                = [];
+const scheduleItems            = [];
+const shortsLog                = [];
+const longFormsLog             = [];
+const goals                    = [];
+const recurringSchedule        = [];
+const recurringSkips           = [];   // [{ templateId, date }]
+const recurringTeamTasks       = [];
+const recurringTeamCompletions = [];   // [{ templateId, weekIso, completedBy }]
+const clients                  = new Map();
 
 async function loadData() {
   console.log('loadData: starting...');
@@ -193,7 +230,123 @@ async function loadData() {
     });
   } catch (err) { console.error('loadData: FAILED on goals:', err.message); }
 
+  console.log('loadData: querying recurring_schedule...');
+  try {
+    const rows = await query('SELECT * FROM recurring_schedule ORDER BY day_of_week, time NULLS LAST, id');
+    console.log(`loadData: recurring_schedule OK (${rows.length} rows)`);
+    rows.forEach(r => {
+      recurringSchedule.push({
+        id: r.id, dayOfWeek: r.day_of_week, time: r.time, type: r.type,
+        text: r.text, members: JSON.parse(r.members), alternate: r.alternate,
+        description: r.description || ''
+      });
+    });
+  } catch (err) { console.error('loadData: FAILED on recurring_schedule:', err.message); }
+
+  console.log('loadData: querying recurring_schedule_skips...');
+  try {
+    const rows = await query('SELECT * FROM recurring_schedule_skips');
+    console.log(`loadData: recurring_schedule_skips OK (${rows.length} rows)`);
+    rows.forEach(r => recurringSkips.push({ templateId: r.template_id, date: r.date }));
+  } catch (err) { console.error('loadData: FAILED on recurring_schedule_skips:', err.message); }
+
+  console.log('loadData: querying recurring_team_tasks...');
+  try {
+    const rows = await query('SELECT * FROM recurring_team_tasks ORDER BY id');
+    console.log(`loadData: recurring_team_tasks OK (${rows.length} rows)`);
+    rows.forEach(r => recurringTeamTasks.push({ id: r.id, text: r.text }));
+  } catch (err) { console.error('loadData: FAILED on recurring_team_tasks:', err.message); }
+
+  console.log('loadData: querying recurring_team_completions...');
+  try {
+    const rows = await query('SELECT * FROM recurring_team_completions');
+    console.log(`loadData: recurring_team_completions OK (${rows.length} rows)`);
+    rows.forEach(r => recurringTeamCompletions.push({
+      templateId: r.template_id, weekIso: r.week_iso, completedBy: r.completed_by
+    }));
+  } catch (err) { console.error('loadData: FAILED on recurring_team_completions:', err.message); }
+
   console.log('loadData: done');
+}
+
+// ── Recurring seed ─────────────────────────────────────────────────────────
+async function seedRecurring() {
+  try {
+    const [{ count: schedCount }] = await query('SELECT COUNT(*)::int AS count FROM recurring_schedule');
+    if (schedCount === 0) {
+      console.log('seedRecurring: seeding recurring_schedule...');
+      // Schedule template seed: { dayOfWeek (0=Sun..6=Sat), time, type, text, members, alternate }
+      const seeds = [
+        // Sunday
+        { dayOfWeek: 0, time: '13:00', type: 'Shorts',    text: 'Trivia Short', members: ['Joe'],          alternate: false },
+        { dayOfWeek: 0, time: '15:30', type: 'Shorts',    text: 'Clips Short',  members: ['Jack', 'Joe'],   alternate: true  },
+        { dayOfWeek: 0, time: '18:00', type: 'Shorts',    text: 'Trivia Short', members: ['Jack'],         alternate: false },
+        // Monday
+        { dayOfWeek: 1, time: '10:00', type: 'Meetings',  text: 'Owners Meeting', members: [],              alternate: false },
+        { dayOfWeek: 1, time: '12:00', type: 'Graphics',  text: 'Graphic',        members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 1, time: '13:00', type: 'Shorts',    text: 'Trivia Short',   members: ['Joe'],         alternate: false },
+        { dayOfWeek: 1, time: '13:00', type: 'Shorts',    text: 'Trivia Short',   members: ['Jack'],        alternate: false },
+        { dayOfWeek: 1, time: '15:30', type: 'Shorts',    text: 'Clips Short',    members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 1, time: '19:00', type: 'Meetings',  text: 'Livestream',     members: [],              alternate: false },
+        // Tuesday
+        { dayOfWeek: 2, time: '10:00', type: 'Meetings',  text: 'Team Meeting',     members: [],              alternate: false },
+        { dayOfWeek: 2, time: '12:00', type: 'Graphics',  text: 'Graphic',          members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 2, time: null,    type: 'Long Form', text: 'Long Form Shoot',  members: ['Jack', 'Joe'], alternate: false },
+        { dayOfWeek: 2, time: null,    type: 'Long Form', text: 'Long Form Release',members: [],              alternate: false },
+        { dayOfWeek: 2, time: '13:00', type: 'Shorts',    text: 'Trivia Short',     members: ['Joe'],         alternate: false },
+        { dayOfWeek: 2, time: '15:30', type: 'Shorts',    text: 'Clips Short',      members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 2, time: '18:00', type: 'Shorts',    text: 'Trivia Short',     members: ['Jack'],        alternate: false },
+        // Wednesday
+        { dayOfWeek: 3, time: '10:00', type: 'Meetings',  text: 'AI Meeting',        members: [],              alternate: false },
+        { dayOfWeek: 3, time: null,    type: 'Long Form', text: 'Long Form Shoot',   members: ['Jack', 'Joe'], alternate: false },
+        { dayOfWeek: 3, time: null,    type: 'Long Form', text: 'Long Form Release', members: [],              alternate: false },
+        { dayOfWeek: 3, time: '13:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Joe'],         alternate: false },
+        { dayOfWeek: 3, time: '15:30', type: 'Shorts',    text: 'Clips Short',       members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 3, time: '18:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Jack'],        alternate: false },
+        // Thursday
+        { dayOfWeek: 4, time: '12:00', type: 'Graphics',  text: 'Graphic',      members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 4, time: '13:00', type: 'Shorts',    text: 'Trivia Short', members: ['Joe'],         alternate: false },
+        { dayOfWeek: 4, time: '15:30', type: 'Shorts',    text: 'Clips Short',  members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 4, time: '18:00', type: 'Shorts',    text: 'Trivia Short', members: ['Jack'],        alternate: false },
+        { dayOfWeek: 4, time: '19:00', type: 'Meetings',  text: 'Livestream',   members: [],              alternate: false },
+        // Friday
+        { dayOfWeek: 5, time: '12:00', type: 'Graphics',  text: 'Graphic',           members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 5, time: null,    type: 'Long Form', text: 'Long Form Shoot',   members: ['Jack', 'Joe'], alternate: false },
+        { dayOfWeek: 5, time: null,    type: 'Long Form', text: 'Long Form Release', members: [],              alternate: false },
+        { dayOfWeek: 5, time: '13:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Joe'],         alternate: false },
+        { dayOfWeek: 5, time: '15:30', type: 'Shorts',    text: 'Clips Short',       members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 5, time: '18:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Jack'],        alternate: false },
+        // Saturday
+        { dayOfWeek: 6, time: '12:00', type: 'Graphics',  text: 'Graphic',           members: ['Jack', 'Joe'], alternate: true  },
+        { dayOfWeek: 6, time: null,    type: 'Long Form', text: 'Long Form Release', members: [],              alternate: false },
+        { dayOfWeek: 6, time: '13:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Joe'],         alternate: false },
+        { dayOfWeek: 6, time: '18:00', type: 'Shorts',    text: 'Trivia Short',      members: ['Jack'],        alternate: false },
+      ];
+      for (const t of seeds) {
+        await query(
+          'INSERT INTO recurring_schedule (day_of_week,time,type,text,members,alternate) VALUES ($1,$2,$3,$4,$5,$6)',
+          [t.dayOfWeek, t.time, t.type, t.text, JSON.stringify(t.members), t.alternate]
+        );
+      }
+      console.log(`seedRecurring: seeded ${seeds.length} recurring schedule rows`);
+    }
+
+    const [{ count: taskCount }] = await query('SELECT COUNT(*)::int AS count FROM recurring_team_tasks');
+    if (taskCount === 0) {
+      console.log('seedRecurring: seeding recurring_team_tasks...');
+      const taskSeeds = [
+        '10–15 cold sponsorship outreaches',
+        'Ad market research for team/owners meeting prep',
+        'Data analysis review for team/owners meeting prep',
+      ];
+      for (const text of taskSeeds) {
+        await query('INSERT INTO recurring_team_tasks (text) VALUES ($1)', [text]);
+      }
+      console.log(`seedRecurring: seeded ${taskSeeds.length} recurring team tasks`);
+    }
+  } catch (err) {
+    console.error('seedRecurring: FAILED:', err.message);
+  }
 }
 
 // ── Constants & helpers ────────────────────────────────────────────────────
@@ -261,7 +414,7 @@ wss.on('connection', (ws) => {
           JSON.stringify(userTasks);
           console.log('login: all serialisations OK — sending init...');
 
-          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals });
+          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions });
           console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
           console.log('login: done');
@@ -567,6 +720,74 @@ wss.on('connection', (ws) => {
           broadcast({ type: 'goals_updated', goals });
           break;
         }
+
+        case 'edit_recurring_schedule': {
+          if (!user) return;
+          const t = recurringSchedule.find(r => r.id === msg.id);
+          if (!t) return;
+          if (msg.text        !== undefined) t.text        = (msg.text || '').trim() || t.text;
+          if (msg.type        !== undefined && TASK_TYPES.includes(msg.type)) t.type = msg.type;
+          if (msg.time        !== undefined) t.time        = (msg.time || '').trim() || null;
+          if (msg.description !== undefined) t.description = (msg.description || '').trim();
+          if (Array.isArray(msg.members)) t.members = msg.members.filter(m => ALLOWED_USERS.includes(m));
+          if (typeof msg.alternate === 'boolean') t.alternate = msg.alternate;
+          await query(
+            'UPDATE recurring_schedule SET text=$1,type=$2,time=$3,members=$4,alternate=$5,description=$6 WHERE id=$7',
+            [t.text, t.type, t.time, JSON.stringify(t.members), t.alternate, t.description || null, msg.id]
+          );
+          broadcast({ type: 'recurring_schedule', items: recurringSchedule });
+          break;
+        }
+
+        case 'delete_recurring_schedule': {
+          if (!user) return;
+          await query('DELETE FROM recurring_schedule_skips WHERE template_id = $1', [msg.id]);
+          await query('DELETE FROM recurring_schedule WHERE id = $1', [msg.id]);
+          const idx = recurringSchedule.findIndex(r => r.id === msg.id);
+          if (idx !== -1) recurringSchedule.splice(idx, 1);
+          for (let i = recurringSkips.length - 1; i >= 0; i--) {
+            if (recurringSkips[i].templateId === msg.id) recurringSkips.splice(i, 1);
+          }
+          broadcast({ type: 'recurring_schedule', items: recurringSchedule });
+          broadcast({ type: 'recurring_skips', skips: recurringSkips });
+          break;
+        }
+
+        case 'skip_recurring_schedule': {
+          if (!user) return;
+          const date = (msg.date || '').trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+          if (!recurringSchedule.find(r => r.id === msg.id)) return;
+          await query(
+            'INSERT INTO recurring_schedule_skips (template_id,date) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+            [msg.id, date]
+          );
+          if (!recurringSkips.find(s => s.templateId === msg.id && s.date === date)) {
+            recurringSkips.push({ templateId: msg.id, date });
+          }
+          broadcast({ type: 'recurring_skips', skips: recurringSkips });
+          break;
+        }
+
+        case 'toggle_recurring_team': {
+          if (!user) return;
+          const weekIso = (msg.weekIso || '').trim();
+          if (!/^\d{4}-W\d{2}$/.test(weekIso)) return;
+          if (!recurringTeamTasks.find(t => t.id === msg.id)) return;
+          const existing = recurringTeamCompletions.findIndex(c => c.templateId === msg.id && c.weekIso === weekIso);
+          if (existing !== -1) {
+            await query('DELETE FROM recurring_team_completions WHERE template_id=$1 AND week_iso=$2', [msg.id, weekIso]);
+            recurringTeamCompletions.splice(existing, 1);
+          } else {
+            await query(
+              'INSERT INTO recurring_team_completions (template_id,week_iso,completed_by) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+              [msg.id, weekIso, user.name]
+            );
+            recurringTeamCompletions.push({ templateId: msg.id, weekIso, completedBy: user.name });
+          }
+          broadcast({ type: 'recurring_team_completions', completions: recurringTeamCompletions });
+          break;
+        }
       }
     } catch (err) {
       console.error(`WS message error [${msg.type}]:`, err.message);
@@ -592,6 +813,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   await createTables();
+  await seedRecurring();
   await loadData();
   server.listen(PORT, () => console.log(`\n  Stadium Status Workplace → http://localhost:${PORT}\n`));
 }

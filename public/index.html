@@ -1158,6 +1158,91 @@
     .sched-item.person-joe   { background: #fef3c7; border-color: #fde68a; }
     .sched-item.person-becca { background: #dbeafe; border-color: #bfdbfe; }
 
+    /* Recurring indicator */
+    .recurring-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      width: 14px; height: 14px;
+      font-size: 10px; line-height: 1;
+      color: var(--muted);
+      margin-right: 2px;
+    }
+    .month-event.recurring .recurring-badge { color: inherit; opacity: .7; }
+
+    /* Modal: recurring footer (skip + delete series) */
+    .modal-recurring-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 18px; padding: 10px 12px;
+      background: var(--bg); border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      font-size: 12px; color: var(--muted);
+    }
+    .modal-recurring-row .alt-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      background: var(--card); border: 1.5px solid var(--border);
+      cursor: pointer; font-size: 12px; font-weight: 600;
+      color: var(--muted); font-family: inherit;
+      transition: all .15s;
+    }
+    .modal-recurring-row .alt-toggle:hover { border-color: var(--navy); color: var(--navy); }
+    .modal-recurring-row .alt-toggle.on { background: var(--navy); border-color: var(--navy); color: white; }
+    .modal-recurring-actions {
+      display: flex; gap: 8px; justify-content: flex-start;
+      margin-bottom: 18px;
+    }
+    .btn-skip {
+      padding: 9px 14px; background: var(--card);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      color: var(--muted); cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-skip:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-danger {
+      padding: 9px 14px; background: var(--card);
+      border: 1.5px solid var(--danger); border-radius: var(--radius);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      color: var(--danger); cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .btn-danger:hover { background: var(--danger); color: white; }
+
+    /* Recurring weekly team task — displayed in Team Tasks list */
+    .recurring-section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin: 4px 0 12px;
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted);
+    }
+    .recurring-section-header::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .task-item.recurring-task .recurring-badge {
+      color: var(--navy); opacity: .65;
+      width: 16px; height: 16px; font-size: 12px;
+    }
+    .task-item.recurring-task .weekly-pill {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      padding: 3px 9px; border-radius: 100px;
+      background: var(--bg); color: var(--muted);
+      border: 1px solid var(--border);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* Daily quota reminder strip on Individual Tasks */
+    .daily-quota-note {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; margin-bottom: 18px;
+      background: var(--bg); border: 1px dashed var(--border);
+      border-left: 3px solid var(--navy);
+      border-radius: var(--radius);
+      font-size: 13px; color: var(--muted);
+    }
+    .daily-quota-note strong { color: var(--text); font-weight: 600; }
+
     @media (max-width: 860px) {
       .month-cell { min-height: 78px; padding: 5px; gap: 2px; }
       .month-cell.is-today { padding: 4px; }
@@ -1182,21 +1267,21 @@
     <p>Select your account to continue</p>
     <div class="user-list">
       <button class="user-btn" onclick="login('Jack')">
-        <div class="user-av">JA</div>
+        <div class="user-av">JW</div>
         <div class="user-btn-info">
           <span class="user-btn-name">Jack</span>
           <span class="user-btn-label">Team member</span>
         </div>
       </button>
       <button class="user-btn" onclick="login('Joe')">
-        <div class="user-av">JO</div>
+        <div class="user-av">JF</div>
         <div class="user-btn-info">
           <span class="user-btn-name">Joe</span>
           <span class="user-btn-label">Team member</span>
         </div>
       </button>
       <button class="user-btn" onclick="login('Becca')">
-        <div class="user-av">BE</div>
+        <div class="user-av">BS</div>
         <div class="user-btn-info">
           <span class="user-btn-name">Becca</span>
           <span class="user-btn-label">Team member</span>
@@ -1247,6 +1332,9 @@
           <div class="panel-desc">Everyone's task lists — all visible, add to your own</div>
         </div>
         <span class="count-badge" id="personal-count">0</span>
+      </div>
+      <div class="daily-quota-note">
+        <strong>Goal:</strong> 5 daily tasks per person (non-editing work).
       </div>
       <form id="personal-form">
         <div class="add-card">
@@ -1312,6 +1400,10 @@
           </div>
         </div>
       </form>
+      <div id="recurring-team-section" style="display:none">
+        <div class="recurring-section-header">Weekly recurring</div>
+        <div class="task-list" id="recurring-team-list"></div>
+      </div>
       <div class="task-list" id="team-list"></div>
     </div>
 
@@ -1453,6 +1545,14 @@
       <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleMember('Joe')">JF</button>
       <button type="button" class="member-toggle" data-member="Becca" onclick="toggleMember('Becca')">BS</button>
     </div>
+    <div class="modal-recurring-row" id="modal-recurring-row" style="display:none">
+      <span>Recurring:</span>
+      <button type="button" class="alt-toggle" id="modal-alt-toggle" onclick="toggleAlternate()">↻ Alternate weekly between members</button>
+    </div>
+    <div class="modal-recurring-actions" id="modal-recurring-actions" style="display:none">
+      <button type="button" class="btn-skip"   onclick="skipRecurringDate()">Skip this date</button>
+      <button type="button" class="btn-danger" onclick="deleteRecurringSeries()">Delete series</button>
+    </div>
     <div class="modal-actions">
       <button type="button" class="btn-ghost"   onclick="closeModal()">Cancel</button>
       <button type="button" class="btn-primary" id="modal-submit-btn" onclick="submitScheduleTask()">Add to Schedule</button>
@@ -1531,6 +1631,12 @@
   let editingSchedId = null;
   let scheduleView   = 'month';
   let monthCursor    = new Date();
+  let recurringTemplates       = [];
+  let recurringSkips           = [];   // [{templateId, date}]
+  let recurringTeamTasksList   = [];
+  let recurringCompletions     = [];   // [{templateId, weekIso, completedBy}]
+  let editingRecurringId       = null; // template id when editing a recurring series
+  let editingRecurringSkipDate = null; // iso date the user clicked into
   let shortsLog         = [];
   let shortDetailId       = null;
   let selectedShortMembers = [];
@@ -1650,7 +1756,7 @@
     users.forEach(name => {
       const el = document.createElement('div');
       el.className = 'av-circle';
-      el.textContent = name[0].toUpperCase();
+      el.textContent = MEMBER_INITIALS[name] || name.slice(0, 2).toUpperCase();
       el.title = name;
       avRow.appendChild(el);
     });
@@ -1841,8 +1947,66 @@
     renderAllPersonal(allPersonalTasks);
   }
 
+  // ── Render recurring weekly team tasks ─────────────────────────────────
+  function renderRecurringTeam() {
+    const section = document.getElementById('recurring-team-section');
+    const list    = document.getElementById('recurring-team-list');
+    if (!section || !list) return;
+    if (!recurringTeamTasksList.length) {
+      section.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+    section.style.display = '';
+    const weekIso = isoWeekKey(new Date());
+    const completed = new Set(
+      recurringCompletions
+        .filter(c => c.weekIso === weekIso)
+        .map(c => c.templateId)
+    );
+    list.innerHTML = '';
+    recurringTeamTasksList.forEach(t => {
+      const isDone = completed.has(t.id);
+      const el = document.createElement('div');
+      el.className = 'task-item recurring-task' + (isDone ? ' done' : '');
+
+      const check = document.createElement('div');
+      check.className = 'task-check' + (isDone ? ' checked' : '');
+      check.title = 'Mark complete for this week';
+      check.addEventListener('click', () => {
+        send('toggle_recurring_team', { id: t.id, weekIso });
+        // Optimistic toggle
+        if (isDone) {
+          const idx = recurringCompletions.findIndex(c => c.templateId === t.id && c.weekIso === weekIso);
+          if (idx !== -1) recurringCompletions.splice(idx, 1);
+        } else {
+          recurringCompletions.push({ templateId: t.id, weekIso, completedBy: myName });
+        }
+        renderRecurringTeam();
+      });
+      el.appendChild(check);
+
+      const rb = document.createElement('span');
+      rb.className = 'recurring-badge'; rb.textContent = '↻'; rb.title = 'Resets every Monday';
+      el.appendChild(rb);
+
+      const text = document.createElement('div');
+      text.className = 'task-text';
+      text.textContent = t.text;
+      el.appendChild(text);
+
+      const pill = document.createElement('span');
+      pill.className = 'weekly-pill';
+      pill.textContent = 'Weekly';
+      el.appendChild(pill);
+
+      list.appendChild(el);
+    });
+  }
+
   // ── Render team tasks ──────────────────────────────────────────────────
   function renderTeam(tasks) {
+    renderRecurringTeam();
     const newIds = new Set();
     tasks.forEach(t => { if (!prevTeamIds.has(t.id)) newIds.add(t.id); });
     prevTeamIds.clear();
@@ -2050,6 +2214,50 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
+  // ISO 8601 week number (1–53)
+  function isoWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+  // ISO week key like "2026-W19" — uses ISO year, which can differ from calendar year near Jan/Dec
+  function isoWeekKey(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    return d.getUTCFullYear() + '-W' + String(isoWeekNumber(date)).padStart(2, '0');
+  }
+
+  // Expand recurring schedule templates for a given ISO date — returns synthetic items
+  function expandRecurringForDate(iso) {
+    if (!recurringTemplates.length) return [];
+    const date = new Date(iso + 'T00:00:00');
+    const dow  = date.getDay();
+    const week = isoWeekNumber(date);
+    const skipKeys = new Set(recurringSkips.map(s => s.templateId + '|' + s.date));
+    const out = [];
+    for (const t of recurringTemplates) {
+      if (t.dayOfWeek !== dow) continue;
+      if (skipKeys.has(t.id + '|' + iso)) continue;
+      let members = Array.isArray(t.members) ? t.members.slice() : [];
+      if (t.alternate && members.length > 0) {
+        members = [members[week % members.length]];
+      }
+      out.push({
+        id: 'r_' + t.id + '_' + iso,
+        templateId: t.id,
+        date: iso,
+        text: t.text,
+        type: t.type,
+        time: t.time,
+        members,
+        description: t.description || '',
+        isRecurring: true,
+      });
+    }
+    return out;
+  }
+
   function fmtWeekRange(start) {
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
@@ -2153,9 +2361,10 @@
       const events = document.createElement('div');
       events.className = 'month-events';
 
-      const dayItems = schedItems
-        .filter(it => it.date === iso)
-        .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+      const dayItems = [
+        ...schedItems.filter(it => it.date === iso),
+        ...expandRecurringForDate(iso),
+      ].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
 
       const MAX_VISIBLE = 3;
       dayItems.slice(0, MAX_VISIBLE).forEach(it => events.appendChild(makeMonthEvent(it)));
@@ -2182,7 +2391,12 @@
     const key = item.type === 'Long Form' ? 'longform' : item.type.toLowerCase();
     const oneMember = item.members && item.members.length === 1 ? item.members[0] : null;
     const colorClass = oneMember ? personClass(oneMember) : ('type-' + key);
-    el.className = 'month-event ' + colorClass;
+    el.className = 'month-event ' + colorClass + (item.isRecurring ? ' recurring' : '');
+    if (item.isRecurring) {
+      const rb = document.createElement('span');
+      rb.className = 'recurring-badge'; rb.textContent = '↻'; rb.title = 'Recurring weekly';
+      el.appendChild(rb);
+    }
     if (item.time) {
       const t = document.createElement('span');
       t.className = 'month-event-time';
@@ -2190,10 +2404,13 @@
       el.appendChild(t);
     }
     el.appendChild(document.createTextNode(item.text));
-    el.title = item.description ? (item.text + '\n\n' + item.description) : item.text;
+    el.title = (item.isRecurring ? '↻ Recurring weekly\n' : '')
+             + item.text
+             + (item.description ? '\n\n' + item.description : '');
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      openEditModal(item);
+      if (item.isRecurring) openRecurringEditModal(item);
+      else openEditModal(item);
     });
     return el;
   }
@@ -2250,10 +2467,12 @@
         items.className = 'day-items';
         // Map personal task categories to schedule types
         const CAT_TO_TYPE = { 'Create Short': 'Shorts', 'Edit Short': 'Shorts', 'Create Graphic': 'Graphics', 'Edit Long Form': 'Long Form' };
-        // Merge schedule items + personal tasks with dates + shorts assigned to this date
+        // Merge schedule items + recurring expansions + personal tasks with dates + shorts assigned to this date
         const schedItemsForDay = schedItems.filter(i => i.date === iso);
+        const recurringForDay  = expandRecurringForDate(iso);
         const dayItems = [
           ...schedItemsForDay,
+          ...recurringForDay,
           ...Object.entries(allPersonalTasks).flatMap(([person, tasks]) =>
             (tasks || []).filter(t => {
               if (t.date !== iso || t.done) return false;
@@ -2331,7 +2550,7 @@
 
     // Check if all members have completed their matching personal task
     let isComplete = false;
-    if (!item.fromPersonalTask && !item.fromShort && item.members && item.members.length > 0) {
+    if (!item.isRecurring && !item.fromPersonalTask && !item.fromShort && item.members && item.members.length > 0) {
       let hasTasks = 0, doneCount = 0;
       item.members.forEach(member => {
         const memberTasks = allPersonalTasks[member] || [];
@@ -2343,7 +2562,13 @@
 
     const oneMember = item.members && item.members.length === 1 ? item.members[0] : null;
     const colorClass = oneMember ? personClass(oneMember) : ('type-' + key);
-    row.className = 'sched-item ' + colorClass + (isComplete ? ' sched-complete' : '');
+    row.className = 'sched-item ' + colorClass + (isComplete ? ' sched-complete' : '') + (item.isRecurring ? ' recurring' : '');
+
+    if (item.isRecurring) {
+      const rb = document.createElement('span');
+      rb.className = 'recurring-badge'; rb.textContent = '↻'; rb.title = 'Recurring weekly';
+      row.appendChild(rb);
+    }
 
     const badge = document.createElement('span');
     badge.className = 'type-badge ' + key;
@@ -2403,6 +2628,15 @@
       del.addEventListener('click', (e) => { e.stopPropagation(); send('update_short', { id: item.id, date: '', assignee: '' }); });
       row.appendChild(del);
       row.addEventListener('click', () => openShortById(item.id));
+    } else if (item.isRecurring) {
+      // Recurring expanded instance: click → edit-series modal (which also offers Skip / Delete series)
+      const editBtn = document.createElement('button');
+      editBtn.className = 'sched-edit';
+      editBtn.title = 'Edit recurring series';
+      editBtn.innerHTML = `<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2 2-7 7H3v-2l7-7z"/><path d="M8.5 3.5l2 2"/></svg>`;
+      editBtn.addEventListener('click', (e) => { e.stopPropagation(); openRecurringEditModal(item); });
+      row.appendChild(editBtn);
+      row.addEventListener('click', () => openRecurringEditModal(item));
     } else {
       // Regular schedule item: edit + delete
       const editBtn = document.createElement('button');
@@ -2721,8 +2955,15 @@
   }
 
   // ── Schedule modal ─────────────────────────────────────────────────────
+  function setRecurringUI(active) {
+    document.getElementById('modal-recurring-row').style.display     = active ? 'flex' : 'none';
+    document.getElementById('modal-recurring-actions').style.display = active ? 'flex' : 'none';
+  }
   function openModal(iso, dateObj) {
     editingSchedId = null;
+    editingRecurringId = null;
+    editingRecurringSkipDate = null;
+    setRecurringUI(false);
     modalDate = iso;
     const label = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     document.getElementById('modal-title').textContent = 'Add Task';
@@ -2739,6 +2980,9 @@
   }
   function openEditModal(item) {
     editingSchedId = item.id;
+    editingRecurringId = null;
+    editingRecurringSkipDate = null;
+    setRecurringUI(false);
     modalDate = item.date;
     document.getElementById('modal-title').textContent = 'Edit Task';
     document.getElementById('modal-sub').textContent   = '';
@@ -2753,10 +2997,60 @@
     modalBg.classList.add('open');
     setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
   }
+  function openRecurringEditModal(item) {
+    const template = recurringTemplates.find(t => t.id === item.templateId);
+    if (!template) return;
+    editingSchedId = null;
+    editingRecurringId = template.id;
+    editingRecurringSkipDate = item.date;
+    modalDate = item.date;
+    const dow = new Date(item.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+    document.getElementById('modal-title').textContent = 'Edit recurring series';
+    document.getElementById('modal-sub').textContent   = 'Every ' + dow;
+    document.getElementById('modal-submit-btn').textContent = 'Save Series';
+    selectType(template.type);
+    selectedMembers = template.members ? [...template.members] : [];
+    document.querySelectorAll('.member-toggle').forEach(b =>
+      b.classList.toggle('on', selectedMembers.includes(b.dataset.member)));
+    modalInput.value = template.text;
+    document.getElementById('modal-time-input').value = template.time || '';
+    document.getElementById('modal-description').value = template.description || '';
+    document.getElementById('modal-alt-toggle').classList.toggle('on', !!template.alternate);
+    setRecurringUI(true);
+    modalBg.classList.add('open');
+    setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
+  }
+  function toggleAlternate() {
+    document.getElementById('modal-alt-toggle').classList.toggle('on');
+  }
+  function skipRecurringDate() {
+    if (editingRecurringId === null || !editingRecurringSkipDate) return;
+    if (!confirm('Skip this date for this recurring item? It will return next week.')) return;
+    send('skip_recurring_schedule', { id: editingRecurringId, date: editingRecurringSkipDate });
+    // Optimistic local skip
+    if (!recurringSkips.find(s => s.templateId === editingRecurringId && s.date === editingRecurringSkipDate)) {
+      recurringSkips.push({ templateId: editingRecurringId, date: editingRecurringSkipDate });
+    }
+    closeModal();
+    buildSchedule();
+  }
+  function deleteRecurringSeries() {
+    if (editingRecurringId === null) return;
+    if (!confirm('Delete this recurring series entirely? It will be removed from every week.')) return;
+    send('delete_recurring_schedule', { id: editingRecurringId });
+    // Optimistic local removal
+    const idx = recurringTemplates.findIndex(t => t.id === editingRecurringId);
+    if (idx !== -1) recurringTemplates.splice(idx, 1);
+    closeModal();
+    buildSchedule();
+  }
   function closeModal() {
     modalBg.classList.remove('open');
     modalDate = null;
     editingSchedId = null;
+    editingRecurringId = null;
+    editingRecurringSkipDate = null;
+    setRecurringUI(false);
   }
   function handleModalBgClick(e) { if (e.target === modalBg) closeModal(); }
   function selectType(type) {
@@ -2773,22 +3067,32 @@
   function submitScheduleTask() {
     const text = modalInput.value.trim();
     if (!text) { modalInput.focus(); return; }
-    if (!modalDate) return;
-    const date        = modalDate;
     const members     = [...selectedMembers];
     const type        = selectedType;
     const time        = document.getElementById('modal-time-input').value || null;
     const description = document.getElementById('modal-description').value.trim();
 
-    if (editingSchedId !== null) {
+    if (editingRecurringId !== null) {
+      // Edit existing recurring template — optimistically update local copy
+      const alternate = document.getElementById('modal-alt-toggle').classList.contains('on');
+      const template = recurringTemplates.find(t => t.id === editingRecurringId);
+      if (template) {
+        template.text = text; template.type = type; template.time = time;
+        template.members = members; template.description = description;
+        template.alternate = alternate;
+      }
+      send('edit_recurring_schedule', { id: editingRecurringId, text, type, members, time: time || '', description, alternate });
+    } else if (editingSchedId !== null) {
+      if (!modalDate) return;
       // Edit existing item — optimistically update local state
       const item = schedItems.find(i => i.id === editingSchedId);
       if (item) { item.text = text; item.type = type; item.members = members; item.time = time; item.description = description; }
       send('edit_schedule', { id: editingSchedId, text, taskType: type, members, time: time || '', description });
     } else {
+      if (!modalDate) return;
       // Add new item — optimistic temp entry
-      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members, time, description });
-      send('add_schedule', { text, date, taskType: type, members, time: time || '', description });
+      schedItems.push({ id: -(Date.now()), date: modalDate, text, type, by: myName, members, time, description });
+      send('add_schedule', { text, date: modalDate, taskType: type, members, time: time || '', description });
     }
 
     closeModal();
@@ -2937,6 +3241,10 @@
           shortsLog    = msg.shortsLog     || [];
           longFormsLog = msg.longFormsLog  || [];
           goals        = msg.goals         || [];
+          recurringTemplates     = msg.recurringSchedule         || [];
+          recurringSkips         = msg.recurringSkips            || [];
+          recurringTeamTasksList = msg.recurringTeamTasks        || [];
+          recurringCompletions   = msg.recurringTeamCompletions  || [];
           allPersonalTasks = msg.allPersonalTasks || {};
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
@@ -2954,6 +3262,18 @@
         case 'schedule_items':
           schedItems = msg.items;
           if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'recurring_schedule':
+          recurringTemplates = msg.items || [];
+          if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'recurring_skips':
+          recurringSkips = msg.skips || [];
+          if (activeTab === 'schedule') buildSchedule();
+          break;
+        case 'recurring_team_completions':
+          recurringCompletions = msg.completions || [];
+          if (activeTab === 'team') renderRecurringTeam();
           break;
         case 'shorts_updated':
           shortsLog = msg.shorts;
