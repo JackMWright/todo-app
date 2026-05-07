@@ -60,13 +60,14 @@ async function createTables() {
     `],
     ['schedule_items', `
       CREATE TABLE IF NOT EXISTS schedule_items (
-        id      SERIAL PRIMARY KEY,
-        date    TEXT NOT NULL,
-        text    TEXT NOT NULL,
-        type    TEXT NOT NULL,
-        by      TEXT NOT NULL,
-        members TEXT NOT NULL DEFAULT '[]',
-        time    TEXT
+        id          SERIAL PRIMARY KEY,
+        date        TEXT NOT NULL,
+        text        TEXT NOT NULL,
+        type        TEXT NOT NULL,
+        by          TEXT NOT NULL,
+        members     TEXT NOT NULL DEFAULT '[]',
+        time        TEXT,
+        description TEXT
       )
     `],
     ['shorts', `
@@ -115,8 +116,9 @@ async function createTables() {
 
   // Migrations — add columns to existing tables if missing
   const migrations = [
-    ["shorts.members",     `ALTER TABLE shorts     ADD COLUMN IF NOT EXISTS members TEXT NOT NULL DEFAULT '[]'`],
-    ["long_forms.members", `ALTER TABLE long_forms ADD COLUMN IF NOT EXISTS members TEXT NOT NULL DEFAULT '[]'`],
+    ["shorts.members",            `ALTER TABLE shorts          ADD COLUMN IF NOT EXISTS members     TEXT NOT NULL DEFAULT '[]'`],
+    ["long_forms.members",        `ALTER TABLE long_forms      ADD COLUMN IF NOT EXISTS members     TEXT NOT NULL DEFAULT '[]'`],
+    ["schedule_items.description", `ALTER TABLE schedule_items ADD COLUMN IF NOT EXISTS description TEXT`],
   ];
   for (const [name, sql] of migrations) {
     try { await pool.query(sql); console.log(`migration: ${name} OK`); }
@@ -160,7 +162,7 @@ async function loadData() {
     const rows = await query('SELECT * FROM schedule_items ORDER BY id');
     console.log(`loadData: schedule_items OK (${rows.length} rows)`);
     rows.forEach(r => {
-      scheduleItems.push({ id: r.id, date: r.date, text: r.text, type: r.type, by: r.by, members: JSON.parse(r.members), time: r.time });
+      scheduleItems.push({ id: r.id, date: r.date, text: r.text, type: r.type, by: r.by, members: JSON.parse(r.members), time: r.time, description: r.description || '' });
     });
   } catch (err) { console.error('loadData: FAILED on schedule_items:', err.message); }
 
@@ -373,20 +375,21 @@ wss.on('connection', (ws) => {
 
         case 'add_schedule': {
           if (!user) return;
-          const text    = (msg.text || '').trim();
-          const date    = (msg.date || '').trim();
-          const type    = msg.taskType;
-          const time    = (msg.time || '').trim() || null;
+          const text        = (msg.text || '').trim();
+          const date        = (msg.date || '').trim();
+          const type        = msg.taskType;
+          const time        = (msg.time || '').trim() || null;
+          const description = (msg.description || '').trim() || null;
           if (!text || !date || !TASK_TYPES.includes(type)) return;
           if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
           const members = Array.isArray(msg.members)
             ? msg.members.filter(m => ALLOWED_USERS.includes(m))
             : [];
           const [row] = await query(
-            'INSERT INTO schedule_items (date,text,type,by,members,time) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
-            [date, text, type, user.name, JSON.stringify(members), time]
+            'INSERT INTO schedule_items (date,text,type,by,members,time,description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+            [date, text, type, user.name, JSON.stringify(members), time, description]
           );
-          scheduleItems.push({ id: row.id, date, text, type, by: user.name, members, time });
+          scheduleItems.push({ id: row.id, date, text, type, by: user.name, members, time, description: description || '' });
           broadcast({ type: 'schedule_items', items: scheduleItems });
           let personalChanged = false;
           for (const member of members) {
@@ -406,13 +409,14 @@ wss.on('connection', (ws) => {
           if (!user) return;
           const item = scheduleItems.find(i => i.id === msg.id);
           if (!item) return;
-          if (msg.text     !== undefined) item.text    = (msg.text || '').trim() || item.text;
-          if (msg.taskType !== undefined && TASK_TYPES.includes(msg.taskType)) item.type = msg.taskType;
-          if (msg.time     !== undefined) item.time    = (msg.time || '').trim() || null;
+          if (msg.text        !== undefined) item.text        = (msg.text || '').trim() || item.text;
+          if (msg.taskType    !== undefined && TASK_TYPES.includes(msg.taskType)) item.type = msg.taskType;
+          if (msg.time        !== undefined) item.time        = (msg.time || '').trim() || null;
+          if (msg.description !== undefined) item.description = (msg.description || '').trim();
           if (Array.isArray(msg.members)) item.members = msg.members.filter(m => ALLOWED_USERS.includes(m));
           await query(
-            'UPDATE schedule_items SET text=$1,type=$2,time=$3,members=$4 WHERE id=$5',
-            [item.text, item.type, item.time, JSON.stringify(item.members), msg.id]
+            'UPDATE schedule_items SET text=$1,type=$2,time=$3,members=$4,description=$5 WHERE id=$6',
+            [item.text, item.type, item.time, JSON.stringify(item.members), item.description || null, msg.id]
           );
           broadcast({ type: 'schedule_items', items: scheduleItems });
           break;

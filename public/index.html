@@ -1059,6 +1059,111 @@
       text-align: center; padding: 28px 16px;
       color: var(--muted); font-size: 13px;
     }
+
+    /* ─── Calendar (Schedule tab month view) ─────────────────────────── */
+    .cal-view-toggle {
+      display: flex; gap: 4px;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 4px;
+    }
+    .cal-view-btn {
+      padding: 8px 18px; border: none; background: transparent;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      color: var(--muted); cursor: pointer; border-radius: 6px;
+      transition: background .15s, color .15s;
+    }
+    .cal-view-btn:hover { color: var(--navy); }
+    .cal-view-btn.active { background: var(--navy); color: white; }
+
+    .cal-month-nav {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .cal-month-label {
+      font-size: 18px; font-weight: 700; letter-spacing: -.015em;
+      color: var(--text); flex: 1;
+    }
+    .cal-nav-btn {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 8px 14px;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: inherit;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .cal-nav-btn:hover { border-color: var(--navy); color: var(--navy); background: var(--bg); }
+
+    .month-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .month-dow {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); text-align: center;
+      padding: 4px 0 6px;
+    }
+    .month-cell {
+      min-height: 110px; padding: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--card); cursor: pointer;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: border-color .15s, background .15s;
+      overflow: hidden;
+    }
+    .month-cell:hover { border-color: var(--navy); background: var(--bg); }
+    .month-cell.other-month { opacity: .42; }
+    .month-cell.is-today { border-color: var(--navy); border-width: 2px; padding: 7px; }
+    .month-day-num {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      align-self: flex-start;
+      width: 24px; height: 24px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+    }
+    .month-cell.is-today .month-day-num {
+      background: var(--navy); color: white; font-size: 12px;
+    }
+    .month-events {
+      display: flex; flex-direction: column; gap: 3px; min-height: 0;
+    }
+    .month-event {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 7px; border-radius: 5px;
+      background: var(--bg); color: var(--text);
+      border-left: 3px solid var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer;
+      transition: filter .12s;
+    }
+    .month-event:hover { filter: brightness(.96); }
+    .month-event-time {
+      font-size: 10px; font-weight: 700; opacity: .8; margin-right: 4px;
+    }
+    .month-event.person-jack  { background: #ede9fe; border-left-color: #7c3aed; color: #5b21b6; }
+    .month-event.person-joe   { background: #fef3c7; border-left-color: #d97706; color: #92400e; }
+    .month-event.person-becca { background: #dbeafe; border-left-color: #2563eb; color: #1e3a8a; }
+    .month-event.type-shorts    { background: #eff6ff; border-left-color: #1e40af; color: #1e40af; }
+    .month-event.type-longform  { background: #f5f3ff; border-left-color: #4c1d95; color: #4c1d95; }
+    .month-event.type-graphics  { background: #f0fdf4; border-left-color: #166534; color: #166534; }
+    .month-event.type-meetings  { background: #fff7ed; border-left-color: #c2410c; color: #c2410c; }
+    .month-event.type-shoots    { background: #fdf4ff; border-left-color: #86198f; color: #86198f; }
+    .month-event-more {
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      padding: 1px 4px;
+    }
+
+    /* Person-tinted week-view pill (single-member events) */
+    .sched-item.person-jack  { background: #ede9fe; border-color: #ddd6fe; }
+    .sched-item.person-joe   { background: #fef3c7; border-color: #fde68a; }
+    .sched-item.person-becca { background: #dbeafe; border-color: #bfdbfe; }
+
+    @media (max-width: 860px) {
+      .month-cell { min-height: 78px; padding: 5px; gap: 2px; }
+      .month-cell.is-today { padding: 4px; }
+      .month-event { font-size: 10px; padding: 2px 5px; }
+      .month-day-num { width: 20px; height: 20px; font-size: 11px; }
+    }
   </style>
 </head>
 <body>
@@ -1215,10 +1320,15 @@
       <div class="panel-header">
         <div>
           <div class="panel-title">Schedule</div>
-          <div class="panel-desc">Two-week content calendar — editable by all</div>
+          <div class="panel-desc">Calendar — editable by all</div>
+        </div>
+        <div class="cal-view-toggle">
+          <button type="button" class="cal-view-btn active" data-view="month" onclick="setScheduleView('month')">Month</button>
+          <button type="button" class="cal-view-btn"        data-view="week"  onclick="setScheduleView('week')">Week</button>
         </div>
       </div>
-      <div id="schedule-weeks"></div>
+      <div id="schedule-month"></div>
+      <div id="schedule-weeks" style="display:none"></div>
     </div>
 
     <!-- Shorts Filmed -->
@@ -1327,6 +1437,8 @@
     <div class="modal-time-row">
       <input class="modal-input" type="time" id="modal-time-input">
     </div>
+    <label class="form-label">Description (optional)</label>
+    <textarea class="modal-textarea" id="modal-description" placeholder="Add details..." maxlength="500" rows="3"></textarea>
     <label class="form-label">Type</label>
     <div class="type-row">
       <button type="button" class="type-opt sel" data-type="Shorts"    onclick="selectType('Shorts')">Shorts</button>
@@ -1417,6 +1529,8 @@
   let editingType    = null;
   let editUrgent     = false;
   let editingSchedId = null;
+  let scheduleView   = 'month';
+  let monthCursor    = new Date();
   let shortsLog         = [];
   let shortDetailId       = null;
   let selectedShortMembers = [];
@@ -1945,7 +2059,146 @@
 
   const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
+  function setScheduleView(view) {
+    if (view !== 'month' && view !== 'week') return;
+    scheduleView = view;
+    document.querySelectorAll('.cal-view-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.view === view));
+    buildSchedule();
+  }
+
   function buildSchedule() {
+    const monthEl = document.getElementById('schedule-month');
+    const weekEl  = document.getElementById('schedule-weeks');
+    if (scheduleView === 'month') {
+      monthEl.style.display = '';
+      weekEl.style.display  = 'none';
+      buildScheduleMonth();
+    } else {
+      monthEl.style.display = 'none';
+      weekEl.style.display  = '';
+      buildScheduleWeek();
+    }
+  }
+
+  function buildScheduleMonth() {
+    const container = document.getElementById('schedule-month');
+    container.innerHTML = '';
+
+    const cursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+    const today  = toISO(new Date());
+
+    // Header: prev | label | today | next
+    const nav = document.createElement('div');
+    nav.className = 'cal-month-nav';
+    const prev = document.createElement('button');
+    prev.type = 'button'; prev.className = 'cal-nav-btn'; prev.textContent = '← Prev';
+    prev.addEventListener('click', () => {
+      monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1);
+      buildScheduleMonth();
+    });
+    const label = document.createElement('div');
+    label.className = 'cal-month-label';
+    label.textContent = cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const jumpToday = document.createElement('button');
+    jumpToday.type = 'button'; jumpToday.className = 'cal-nav-btn'; jumpToday.textContent = 'Today';
+    jumpToday.addEventListener('click', () => {
+      monthCursor = new Date();
+      buildScheduleMonth();
+    });
+    const next = document.createElement('button');
+    next.type = 'button'; next.className = 'cal-nav-btn'; next.textContent = 'Next →';
+    next.addEventListener('click', () => {
+      monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
+      buildScheduleMonth();
+    });
+    nav.appendChild(prev);
+    nav.appendChild(label);
+    nav.appendChild(jumpToday);
+    nav.appendChild(next);
+    container.appendChild(nav);
+
+    // Grid: dow header row (7) + 6 weeks × 7 days (42)
+    const grid = document.createElement('div');
+    grid.className = 'month-grid';
+
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'month-dow';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    // Sunday on/before the 1st of the month
+    const startDate = new Date(cursor);
+    startDate.setDate(1 - startDate.getDay());
+
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      const iso     = toISO(day);
+      const isOther = day.getMonth() !== cursor.getMonth();
+      const isToday = iso === today;
+
+      const cell = document.createElement('div');
+      cell.className = 'month-cell'
+        + (isOther ? ' other-month' : '')
+        + (isToday ? ' is-today' : '');
+
+      const dn = document.createElement('span');
+      dn.className = 'month-day-num';
+      dn.textContent = day.getDate();
+      cell.appendChild(dn);
+
+      const events = document.createElement('div');
+      events.className = 'month-events';
+
+      const dayItems = schedItems
+        .filter(it => it.date === iso)
+        .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+
+      const MAX_VISIBLE = 3;
+      dayItems.slice(0, MAX_VISIBLE).forEach(it => events.appendChild(makeMonthEvent(it)));
+      if (dayItems.length > MAX_VISIBLE) {
+        const more = document.createElement('div');
+        more.className = 'month-event-more';
+        more.textContent = '+' + (dayItems.length - MAX_VISIBLE) + ' more';
+        events.appendChild(more);
+      }
+      cell.appendChild(events);
+
+      cell.addEventListener('click', (e) => {
+        if (e.target.closest('.month-event')) return;
+        openModal(iso, day);
+      });
+
+      grid.appendChild(cell);
+    }
+    container.appendChild(grid);
+  }
+
+  function makeMonthEvent(item) {
+    const el = document.createElement('div');
+    const key = item.type === 'Long Form' ? 'longform' : item.type.toLowerCase();
+    const oneMember = item.members && item.members.length === 1 ? item.members[0] : null;
+    const colorClass = oneMember ? personClass(oneMember) : ('type-' + key);
+    el.className = 'month-event ' + colorClass;
+    if (item.time) {
+      const t = document.createElement('span');
+      t.className = 'month-event-time';
+      t.textContent = formatTime(item.time);
+      el.appendChild(t);
+    }
+    el.appendChild(document.createTextNode(item.text));
+    el.title = item.description ? (item.text + '\n\n' + item.description) : item.text;
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditModal(item);
+    });
+    return el;
+  }
+
+  function buildScheduleWeek() {
     schedWeeks.innerHTML = '';
     const today  = toISO(new Date());
     const monday = getMonday(new Date());
@@ -2088,7 +2341,9 @@
       isComplete = hasTasks > 0 && doneCount === hasTasks;
     }
 
-    row.className = 'sched-item type-' + key + (isComplete ? ' sched-complete' : '');
+    const oneMember = item.members && item.members.length === 1 ? item.members[0] : null;
+    const colorClass = oneMember ? personClass(oneMember) : ('type-' + key);
+    row.className = 'sched-item ' + colorClass + (isComplete ? ' sched-complete' : '');
 
     const badge = document.createElement('span');
     badge.className = 'type-badge ' + key;
@@ -2478,6 +2733,7 @@
     document.querySelectorAll('.member-toggle').forEach(b => b.classList.remove('on'));
     modalInput.value = '';
     document.getElementById('modal-time-input').value = '';
+    document.getElementById('modal-description').value = '';
     modalBg.classList.add('open');
     setTimeout(() => modalInput.focus(), 50);
   }
@@ -2493,6 +2749,7 @@
       b.classList.toggle('on', selectedMembers.includes(b.dataset.member)));
     modalInput.value = item.text;
     document.getElementById('modal-time-input').value = item.time || '';
+    document.getElementById('modal-description').value = item.description || '';
     modalBg.classList.add('open');
     setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
   }
@@ -2517,20 +2774,21 @@
     const text = modalInput.value.trim();
     if (!text) { modalInput.focus(); return; }
     if (!modalDate) return;
-    const date    = modalDate;
-    const members = [...selectedMembers];
-    const type    = selectedType;
-    const time    = document.getElementById('modal-time-input').value || null;
+    const date        = modalDate;
+    const members     = [...selectedMembers];
+    const type        = selectedType;
+    const time        = document.getElementById('modal-time-input').value || null;
+    const description = document.getElementById('modal-description').value.trim();
 
     if (editingSchedId !== null) {
       // Edit existing item — optimistically update local state
       const item = schedItems.find(i => i.id === editingSchedId);
-      if (item) { item.text = text; item.type = type; item.members = members; item.time = time; }
-      send('edit_schedule', { id: editingSchedId, text, taskType: type, members, time: time || '' });
+      if (item) { item.text = text; item.type = type; item.members = members; item.time = time; item.description = description; }
+      send('edit_schedule', { id: editingSchedId, text, taskType: type, members, time: time || '', description });
     } else {
       // Add new item — optimistic temp entry
-      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members, time });
-      send('add_schedule', { text, date, taskType: type, members, time: time || '' });
+      schedItems.push({ id: -(Date.now()), date, text, type, by: myName, members, time, description });
+      send('add_schedule', { text, date, taskType: type, members, time: time || '', description });
     }
 
     closeModal();
