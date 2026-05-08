@@ -1627,6 +1627,79 @@
       .btn-primary { min-height: 44px; padding: 12px 20px; }
       .pdn-arrow, .cal-view-btn, .cal-nav-btn { min-height: 40px; }
     }
+
+    /* ─── Out of Office ──────────────────────────────────────────────────── */
+    .ooo-manage-card {
+      background: #fffbeb;
+      border: 1.5px solid #f59e0b;
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+      box-shadow: var(--shadow);
+    }
+    .ooo-manage-label {
+      font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: #92400e; white-space: nowrap; flex-shrink: 0;
+    }
+    .ooo-date-input {
+      padding: 7px 10px;
+      border: 1.5px solid #fcd34d; border-radius: var(--radius);
+      font-size: 13px; font-family: inherit;
+      color: var(--text); outline: none; background: #fffdf5;
+      transition: border-color .15s;
+    }
+    .ooo-date-input:focus { border-color: #f59e0b; background: white; }
+    .ooo-to-label {
+      font-size: 13px; color: #92400e; font-weight: 500; white-space: nowrap;
+    }
+    .ooo-set-btn {
+      padding: 8px 16px;
+      background: #f59e0b; color: white; border: none;
+      border-radius: var(--radius); font-size: 13px; font-weight: 700;
+      font-family: inherit; cursor: pointer; white-space: nowrap;
+      transition: background .15s;
+    }
+    .ooo-set-btn:hover { background: #d97706; }
+    .ooo-entries { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 4px; }
+    .ooo-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 8px 5px 10px;
+      background: #fef3c7; border: 1px solid #f59e0b;
+      border-radius: 100px; font-size: 12px; font-weight: 600; color: #92400e;
+      white-space: nowrap;
+    }
+    .ooo-chip-del {
+      width: 16px; height: 16px; border: none; background: transparent;
+      cursor: pointer; color: #b45309; font-size: 15px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; padding: 0; font-family: inherit;
+      transition: background .15s, color .15s;
+    }
+    .ooo-chip-del:hover { background: #f59e0b; color: white; }
+
+    /* OOO banner inside person column */
+    .ooo-col-banner {
+      padding: 6px 18px;
+      background: #fef3c7;
+      border-bottom: 1px solid #fcd34d;
+      font-size: 11px; font-weight: 700;
+      color: #92400e; text-transform: uppercase; letter-spacing: .07em;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* OOO pill in schedule day */
+    .ooo-day-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      background: #fef3c7; border: 1px solid #f59e0b;
+      border-radius: 100px; font-size: 12px; font-weight: 600; color: #92400e;
+      white-space: nowrap;
+    }
+    .ooo-day-group {
+      display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -1742,6 +1815,14 @@
           </div>
         </div>
       </form>
+      <div id="ooo-manage-card" class="ooo-manage-card" style="display:none">
+        <span class="ooo-manage-label">✈ Out of Office</span>
+        <input type="date" id="ooo-start" class="ooo-date-input" title="Start date">
+        <span class="ooo-to-label">to</span>
+        <input type="date" id="ooo-end" class="ooo-date-input" title="End date">
+        <button type="button" class="ooo-set-btn" onclick="submitOOO()">Set OOO</button>
+        <div class="ooo-entries" id="ooo-entries-list"></div>
+      </div>
       <div id="personal-date-nav" class="personal-date-nav"></div>
       <div id="tasks-3col-grid"></div>
     </div>
@@ -2071,6 +2152,7 @@
   let myName       = '';
   let myTasks      = [];
   let allPersonalTasks = {};
+  let oooEntries   = [];
   let sharedTasks  = [];
   let schedItems   = [];
   let goals        = [];
@@ -2185,6 +2267,43 @@
     }
   }
 
+  // ── Out of Office helpers ──────────────────────────────────────────────
+  function isOOO(name, dateISO) {
+    return oooEntries.some(e => e.person === name && dateISO >= e.startDate && dateISO <= e.endDate);
+  }
+
+  function renderOOOEntries() {
+    const list = document.getElementById('ooo-entries-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const myEntries = oooEntries.filter(e => e.person === myName);
+    myEntries.forEach(e => {
+      const chip = document.createElement('div');
+      chip.className = 'ooo-chip';
+      const fmt = iso => new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      chip.appendChild(document.createTextNode(
+        e.startDate === e.endDate ? fmt(e.startDate) : fmt(e.startDate) + ' – ' + fmt(e.endDate)
+      ));
+      const del = document.createElement('button');
+      del.className = 'ooo-chip-del';
+      del.innerHTML = '&times;';
+      del.title = 'Remove';
+      del.addEventListener('click', () => send('delete_ooo', { id: e.id }));
+      chip.appendChild(del);
+      list.appendChild(chip);
+    });
+  }
+
+  function submitOOO() {
+    const start = document.getElementById('ooo-start').value;
+    const end   = document.getElementById('ooo-end').value;
+    if (!start || !end) { toast('Pick a start and end date'); return; }
+    if (end < start)    { toast('End date must be on or after start date'); return; }
+    send('add_ooo', { startDate: start, endDate: end });
+    document.getElementById('ooo-start').value = '';
+    document.getElementById('ooo-end').value   = '';
+  }
+
   // ── DOM refs ───────────────────────────────────────────────────────────
   const loginScreen   = document.getElementById('login-screen');
   const appEl         = document.getElementById('app');
@@ -2247,6 +2366,7 @@
 
   // ── Render all personal tasks (daily view) ────────────────────────────
   function renderAllPersonal(allTasks) {
+    renderOOOEntries();
     allPersonalTasks = allTasks || {};
     myTasks = allPersonalTasks[myName] || [];
     personalCount.textContent = myTasks.filter(t => !t.done).length;
@@ -2358,6 +2478,13 @@
       hdr.className = 'person-col-header ' + (HDR_CLASS[name] || '');
       hdr.innerHTML = `<span class="person-col-av">${INITIALS[name] || name[0]}</span>${name}<span class="person-col-count">${totalActive} active</span>`;
       col.appendChild(hdr);
+
+      if (isOOO(name, viewDate)) {
+        const banner = document.createElement('div');
+        banner.className = 'ooo-col-banner';
+        banner.textContent = '✈ Out of Office';
+        col.appendChild(banner);
+      }
 
       const body = document.createElement('div');
       body.className = 'person-col-body';
@@ -2935,6 +3062,25 @@
         // Tasks area — grouped by category
         const items = document.createElement('div');
         items.className = 'day-items';
+
+        // OOO indicators — shown first so they're always visible
+        const oooForDay = ['Jack', 'Joe'].filter(p => isOOO(p, iso));
+        if (oooForDay.length) {
+          const oooGroup = document.createElement('div');
+          oooGroup.className = 'ooo-day-group';
+          oooForDay.forEach(p => {
+            const pill = document.createElement('div');
+            pill.className = 'ooo-day-pill';
+            const av = document.createElement('span');
+            av.className = 'sched-member person-' + p.toLowerCase();
+            av.textContent = MEMBER_INITIALS[p] || p[0];
+            av.title = p;
+            pill.appendChild(av);
+            pill.appendChild(document.createTextNode('\u00A0' + p + ' – Out of Office'));
+            oooGroup.appendChild(pill);
+          });
+          items.appendChild(oooGroup);
+        }
         // Map personal task categories to schedule types
         const CAT_TO_TYPE = { 'Create Short': 'Shorts', 'Edit Short': 'Shorts', 'Create Graphic': 'Graphics', 'Edit Long Form': 'Long Form' };
         // Merge schedule items + recurring expansions + personal tasks with dates + shorts assigned to this date
@@ -4090,6 +4236,7 @@
           userSessions           = msg.userSessions              || [];
           onlineNames            = new Set(msg.onlineUsers || []);
           ideas                  = msg.ideas                      || [];
+          oooEntries             = msg.oooEntries                || [];
           allPersonalTasks = msg.allPersonalTasks || {};
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
@@ -4133,6 +4280,12 @@
           goals = msg.goals;
           if (activeTab === 'goals') renderGoals(goals);
           break;
+        case 'ooo_updated':
+          oooEntries = msg.entries;
+          renderOOOEntries();
+          renderAllPersonal(allPersonalTasks);
+          if (activeTab === 'schedule') buildSchedule();
+          break;
         case 'presence':
           onlineNames = new Set(msg.onlineUsers || []);
           renderAvatars(msg.onlineUsers);
@@ -4164,6 +4317,7 @@
     appEl.classList.add('visible');
     document.getElementById('personal-assign').style.display = name === 'Jack' ? 'flex' : 'none';
     setupIdleDetection();
+    document.getElementById('ooo-manage-card').style.display = (name === 'Jack' || name === 'Joe') ? 'flex' : 'none';
     connect();
   }
 </script>

@@ -154,6 +154,15 @@ async function createTables() {
         created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `],
+    ['out_of_office', `
+      CREATE TABLE IF NOT EXISTS out_of_office (
+        id         SERIAL PRIMARY KEY,
+        person     TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date   TEXT NOT NULL,
+        added_by   TEXT NOT NULL
+      )
+    `],
   ];
 
   for (const [name, sql] of tables) {
@@ -192,6 +201,7 @@ const recurringTeamTasks       = [];
 const recurringTeamCompletions = [];   // [{ templateId, weekIso, completedBy }]
 const userSessions             = [];   // [{ id, userName, loginTime, logoutTime, duration }]
 const ideas                    = [];   // [{ id, title, description, category, status, submittedBy, createdAt }]
+const oooEntries               = [];
 const clients                  = new Map();
 
 async function loadData() {
@@ -316,6 +326,15 @@ async function loadData() {
       duration: r.duration
     }));
   } catch (err) { console.error('loadData: FAILED on user_sessions:', err.message); }
+
+  console.log('loadData: querying out_of_office...');
+  try {
+    const rows = await query('SELECT * FROM out_of_office ORDER BY id');
+    console.log(`loadData: out_of_office OK (${rows.length} rows)`);
+    rows.forEach(r => {
+      oooEntries.push({ id: r.id, person: r.person, startDate: r.start_date, endDate: r.end_date });
+    });
+  } catch (err) { console.error('loadData: FAILED on out_of_office:', err.message); }
 
   console.log('loadData: done');
 }
@@ -520,7 +539,7 @@ wss.on('connection', (ws) => {
           JSON.stringify(userTasks);
           console.log('login: all serialisations OK — sending init...');
 
-          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions, ideas });
+          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions, ideas, oooEntries });
           console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
           broadcast({ type: 'sessions_updated', sessions: userSessions });
@@ -961,6 +980,35 @@ wss.on('connection', (ws) => {
           const idx = ideas.findIndex(i => i.id === msg.id);
           if (idx !== -1) ideas.splice(idx, 1);
           broadcast({ type: 'ideas_updated', ideas });
+          break;
+        }
+
+        case 'add_ooo': {
+          if (!user) return;
+          if (!['Jack', 'Joe'].includes(user.name)) return;
+          const startDate = (msg.startDate || '').trim();
+          const endDate   = (msg.endDate   || '').trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return;
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate))   return;
+          if (endDate < startDate) return;
+          const [row] = await query(
+            'INSERT INTO out_of_office (person, start_date, end_date, added_by) VALUES ($1,$2,$3,$4) RETURNING id',
+            [user.name, startDate, endDate, user.name]
+          );
+          oooEntries.push({ id: row.id, person: user.name, startDate, endDate });
+          broadcast({ type: 'ooo_updated', entries: oooEntries });
+          break;
+        }
+
+        case 'delete_ooo': {
+          if (!user) return;
+          const entry = oooEntries.find(e => e.id === msg.id);
+          if (!entry) return;
+          if (entry.person !== user.name) return;
+          await query('DELETE FROM out_of_office WHERE id = $1', [msg.id]);
+          const oooIdx = oooEntries.findIndex(e => e.id === msg.id);
+          if (oooIdx !== -1) oooEntries.splice(oooIdx, 1);
+          broadcast({ type: 'ooo_updated', entries: oooEntries });
           break;
         }
       }
