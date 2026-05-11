@@ -170,7 +170,7 @@
       color: var(--text-strong); font-size: 16px; font-weight: 600; letter-spacing: -.02em;
     }
     .brand-logo {
-      height: 34px; width: auto; display: block;
+      height: 48px; width: auto; display: block;
       object-fit: contain;
     }
 
@@ -1605,14 +1605,122 @@
     }
     .daily-quota-note strong { color: var(--text-strong); font-weight: 600; }
 
+    /* ─── XP / Leaderboard ──────────────────────────────────────────── */
+    .xp-leaderboard {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 20px;
+    }
+    .xp-card {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      overflow: hidden;
+      transition: transform .15s, border-color .15s;
+    }
+    .xp-card::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(
+        -55deg, transparent, transparent 16px,
+        rgba(255,255,255,.025) 16px, rgba(255,255,255,.025) 17px
+      );
+      pointer-events: none;
+    }
+    .xp-card.xp-jack  { background: linear-gradient(135deg, var(--jack-bg)  0%, var(--card) 70%); border-color: var(--jack); }
+    .xp-card.xp-joe   { background: linear-gradient(135deg, var(--joe-bg)   0%, var(--card) 70%); border-color: var(--joe); }
+    .xp-card.xp-becca { background: linear-gradient(135deg, var(--becca-bg) 0%, var(--card) 70%); border-color: var(--becca); }
+    .xp-card.xp-leader { box-shadow: 0 0 0 1px currentColor, 0 0 24px -8px currentColor; }
+    .xp-card.xp-jack.xp-leader  { color: var(--jack); }
+    .xp-card.xp-joe.xp-leader   { color: var(--joe); }
+    .xp-card.xp-becca.xp-leader { color: var(--becca); }
+    .xp-rank {
+      font-size: 11px; font-weight: 800; letter-spacing: .05em;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.08);
+      color: var(--muted);
+      flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .xp-card.xp-leader .xp-rank {
+      background: currentColor;
+      color: var(--text-strong);
+    }
+    .xp-card.xp-jack.xp-leader  .xp-rank { color: #ffffff; background: var(--jack); }
+    .xp-card.xp-joe.xp-leader   .xp-rank { color: #ffffff; background: var(--joe); }
+    .xp-card.xp-becca.xp-leader .xp-rank { color: #ffffff; background: var(--becca); }
+    .xp-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
+    .xp-name {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-strong);
+      line-height: 1.2;
+    }
+    .xp-card.xp-jack  .xp-name { color: var(--jack-text); }
+    .xp-card.xp-joe   .xp-name { color: var(--joe-text); }
+    .xp-card.xp-becca .xp-name { color: var(--becca-text); }
+    .xp-total {
+      font-size: 22px; font-weight: 800;
+      color: var(--text-strong); letter-spacing: -.01em;
+      line-height: 1.1;
+    }
+    .xp-total-suffix {
+      font-size: 11px; font-weight: 700;
+      color: var(--muted); letter-spacing: .08em;
+      margin-left: 4px;
+    }
+    .xp-streak {
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 100px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      white-space: nowrap; flex-shrink: 0;
+      position: relative; z-index: 1;
+    }
+    .xp-card.xp-jack  .xp-streak.active { background: var(--jack-bg);  border-color: var(--jack);  color: var(--jack-text); }
+    .xp-card.xp-joe   .xp-streak.active { background: var(--joe-bg);   border-color: var(--joe);   color: var(--joe-text); }
+    .xp-card.xp-becca .xp-streak.active { background: var(--becca-bg); border-color: var(--becca); color: var(--becca-text); }
+
+    /* XP next to each column header */
+    .person-col-xp {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-strong);
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 3px 9px; border-radius: 100px;
+      letter-spacing: .04em;
+      position: relative; z-index: 1;
+      margin-left: 8px;
+    }
+
+    /* Floating +XP popup on completion */
+    .xp-pop {
+      position: fixed;
+      font-size: 14px; font-weight: 800;
+      letter-spacing: .02em;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      animation: xp-rise 1.4s cubic-bezier(.2,.7,.3,1) forwards;
+      text-shadow: 0 0 12px currentColor;
+      white-space: nowrap;
+    }
+    .xp-pop.xp-pop-bonus { font-size: 16px; }
+    @keyframes xp-rise {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+      15%  { opacity: 1; transform: translate(-50%, -90%) scale(1.1); }
+      40%  { opacity: 1; transform: translate(-50%, -120%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -200%) scale(.95); }
+    }
+
     /* ─── Mobile (<768px) ───────────────────────────────────────────── */
     @media (max-width: 768px) {
       main { padding: 24px 16px; }
       header { padding: 0 16px; height: 56px; }
-      .brand-logo { height: 28px; }
+      .brand-logo { height: 40px; }
       .tab-bar { padding: 6px 12px; }
       .day-cell { flex-wrap: wrap; padding: 14px; }
-      .tasks-3col, .goals-grid { grid-template-columns: 1fr; }
+      .tasks-3col, .goals-grid, .xp-leaderboard { grid-template-columns: 1fr; }
       .panel-title { font-size: 22px; }
       .modal { padding: 24px 20px; }
       .month-cell { min-height: 70px; padding: 4px; gap: 2px; }
@@ -1783,6 +1891,7 @@
       <div class="daily-quota-note">
         <strong>Goal:</strong> 5 daily tasks per person (non-editing work).
       </div>
+      <div id="xp-leaderboard" class="xp-leaderboard"></div>
       <form id="personal-form">
         <div class="add-card">
           <div class="add-top-row">
@@ -2195,6 +2304,7 @@
   let selectedLongFormMembers = [];
   let personalViewDate     = null; // ISO date string; null until first render
   const prevTeamIds  = new Set();
+  let xpEvents       = []; // [{ id, userName, points, reason, taskId, date, createdAt }]
 
   // ── Confetti ───────────────────────────────────────────────────────────
   function launchConfetti(cx, cy) {
@@ -2241,6 +2351,113 @@
       else canvas.remove();
     }
     requestAnimationFrame(frame);
+  }
+
+  // ── XP / Leaderboard ───────────────────────────────────────────────────
+  const PERSON_COLORS = { Jack: '#A855F7', Joe: '#F59E0B', Becca: '#3B82F6' };
+
+  function totalXPFor(name) {
+    let total = 0;
+    for (const e of xpEvents) if (e.userName === name) total += e.points;
+    return total;
+  }
+
+  function todayLocalISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // Current streak = consecutive recent days (ending today or yesterday)
+  // on which the user earned a daily_goal event.
+  function streakFor(name) {
+    const goalDays = new Set(
+      xpEvents.filter(e => e.userName === name && e.reason === 'daily_goal').map(e => e.date)
+    );
+    if (goalDays.size === 0) return 0;
+    // Anchor: today if it has a goal, else yesterday (so a streak doesn't
+    // appear broken before the user has a chance to finish today's work).
+    let cursor = todayLocalISO();
+    if (!goalDays.has(cursor)) {
+      const d = new Date(cursor + 'T00:00:00');
+      d.setDate(d.getDate() - 1);
+      cursor = d.toISOString().slice(0, 10);
+      if (!goalDays.has(cursor)) return 0;
+    }
+    let streak = 0;
+    while (goalDays.has(cursor)) {
+      streak++;
+      const d = new Date(cursor + 'T00:00:00');
+      d.setDate(d.getDate() - 1);
+      cursor = d.toISOString().slice(0, 10);
+    }
+    return streak;
+  }
+
+  function renderLeaderboard() {
+    const el = document.getElementById('xp-leaderboard');
+    if (!el) return;
+    const PEOPLE = ['Jack', 'Joe', 'Becca'];
+    const rows = PEOPLE.map(name => ({
+      name, xp: totalXPFor(name), streak: streakFor(name)
+    })).sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name));
+    const topXP = rows[0]?.xp || 0;
+
+    el.innerHTML = '';
+    rows.forEach((r, idx) => {
+      const card = document.createElement('div');
+      const cls = name => name.toLowerCase();
+      const isLeader = r.xp > 0 && r.xp === topXP;
+      card.className = `xp-card xp-${cls(r.name)}${isLeader ? ' xp-leader' : ''}`;
+      const streakHtml = r.streak >= 2
+        ? `<span class="xp-streak active">🔥 ${r.streak}d</span>`
+        : `<span class="xp-streak">— streak</span>`;
+      card.innerHTML = `
+        <span class="xp-rank">${idx + 1}</span>
+        <div class="xp-body">
+          <div class="xp-name">${r.name}</div>
+          <div class="xp-total">${r.xp}<span class="xp-total-suffix">XP</span></div>
+        </div>
+        ${streakHtml}
+      `;
+      el.appendChild(card);
+    });
+  }
+
+  function renderXP(highlight) {
+    renderLeaderboard();
+    // Re-render columns so the XP badge in each header reflects new totals.
+    renderAllPersonal(allPersonalTasks);
+    // The +10 pop is shown locally at click time (see task-check handler);
+    // the broadcast just animates any bonus the user just earned.
+    if (highlight && highlight.userName === myName && highlight.bonus > 0) {
+      // Daily-goal bonus is always 25; anything above is the streak bonus.
+      showBonusPop(highlight.bonus, `+${highlight.bonus} BONUS!`);
+    }
+  }
+
+  function showXPPopAt(cx, cy, points, opts = {}) {
+    const color = PERSON_COLORS[myName] || '#ffffff';
+    const pop = document.createElement('div');
+    pop.className = 'xp-pop' + (opts.bonus ? ' xp-pop-bonus' : '');
+    pop.style.left  = cx + 'px';
+    pop.style.top   = cy + 'px';
+    pop.style.color = color;
+    pop.textContent = opts.label || `+${points} XP`;
+    if (opts.delay) pop.style.animationDelay = opts.delay;
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 1800);
+  }
+
+  // Anchor bonus pops to the leaderboard so the reward feels tied to it.
+  function showBonusPop(points, label) {
+    const card = document.querySelector(`.xp-card.xp-${myName.toLowerCase()}`);
+    const target = card || document.getElementById('xp-leaderboard');
+    if (!target) return;
+    const r = target.getBoundingClientRect();
+    showXPPopAt(r.left + r.width / 2, r.top + r.height / 2, points, { bonus: true, label });
   }
 
   // ── Category pills ─────────────────────────────────────────────────────
@@ -2476,7 +2693,8 @@
 
       const hdr = document.createElement('div');
       hdr.className = 'person-col-header ' + (HDR_CLASS[name] || '');
-      hdr.innerHTML = `<span class="person-col-av">${INITIALS[name] || name[0]}</span>${name}<span class="person-col-count">${totalActive} active</span>`;
+      const xpTotal = totalXPFor(name);
+      hdr.innerHTML = `<span class="person-col-av">${INITIALS[name] || name[0]}</span>${name}<span class="person-col-xp">${xpTotal} XP</span><span class="person-col-count">${totalActive} active</span>`;
       col.appendChild(hdr);
 
       if (isOOO(name, viewDate)) {
@@ -2685,7 +2903,12 @@
     check.addEventListener('click', (e) => {
       if (!task.done) {
         const r = e.currentTarget.getBoundingClientRect();
-        launchConfetti(r.left + r.width / 2, r.top + r.height / 2);
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        launchConfetti(cx, cy);
+        // canEdit is only true for the logged-in user's personal tasks,
+        // so this also scopes the XP pop to "my" completions.
+        if (type === 'personal' && canEdit) showXPPopAt(cx, cy, 10);
       }
       send(type === 'personal' ? 'toggle_personal' : 'toggle_team', { id: task.id });
     });
@@ -3724,8 +3947,12 @@
     e.preventDefault();
     const text = document.getElementById('personal-input').value.trim();
     if (!text) return;
+    // Only honor the assignee select when it's visible (Jack only); for
+    // everyone else the dropdown stays hidden and tasks belong to the logged-in user.
+    const assignWrap = document.getElementById('personal-assign');
     const assigneeEl = document.getElementById('personal-assignee');
-    const target = assigneeEl ? assigneeEl.value : myName;
+    const assignVisible = assignWrap && assignWrap.style.display !== 'none';
+    const target = (assignVisible && assigneeEl) ? assigneeEl.value : myName;
     const date = document.getElementById('personal-date-input').value || null;
     const time = document.getElementById('personal-time-input').value || null;
     send('add_personal', { text, category: personalCat, urgent: personalUrgent, target, date: date || '', time: time || '' });
@@ -4236,8 +4463,10 @@
           userSessions           = msg.userSessions              || [];
           onlineNames            = new Set(msg.onlineUsers || []);
           ideas                  = msg.ideas                      || [];
-          oooEntries             = msg.oooEntries                || [];
+          oooEntries             = msg.oooEntries                  || [];
+          xpEvents               = msg.xpEvents                    || [];
           allPersonalTasks = msg.allPersonalTasks || {};
+          renderLeaderboard();
           renderAllPersonal(allPersonalTasks);
           msg.teamTasks.forEach(t => prevTeamIds.add(t.id));
           renderTeam(msg.teamTasks);
@@ -4301,6 +4530,10 @@
           ideas = msg.ideas || [];
           if (activeTab === 'ideabank') renderIdeas();
           break;
+        case 'xp_events':
+          xpEvents = msg.events || [];
+          renderXP(msg.highlight);
+          break;
       }
     };
     ws.onclose = () => setTimeout(connect, 2000);
@@ -4316,6 +4549,10 @@
     loginScreen.classList.add('hidden');
     appEl.classList.add('visible');
     document.getElementById('personal-assign').style.display = name === 'Jack' ? 'flex' : 'none';
+    // Default the assignee select to the logged-in user so new tasks go to
+    // the correct column. (Only Jack sees the select; everyone else uses myName.)
+    const assigneeEl = document.getElementById('personal-assignee');
+    if (assigneeEl) assigneeEl.value = name;
     setupIdleDetection();
     document.getElementById('ooo-manage-card').style.display = (name === 'Jack' || name === 'Joe') ? 'flex' : 'none';
     connect();

@@ -163,6 +163,17 @@ async function createTables() {
         added_by   TEXT NOT NULL
       )
     `],
+    ['xp_events', `
+      CREATE TABLE IF NOT EXISTS xp_events (
+        id         SERIAL PRIMARY KEY,
+        user_name  TEXT NOT NULL,
+        points     INT NOT NULL,
+        reason     TEXT NOT NULL,
+        task_id    INT,
+        date       TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `],
   ];
 
   for (const [name, sql] of tables) {
@@ -202,6 +213,7 @@ const recurringTeamCompletions = [];   // [{ templateId, weekIso, completedBy }]
 const userSessions             = [];   // [{ id, userName, loginTime, logoutTime, duration }]
 const ideas                    = [];   // [{ id, title, description, category, status, submittedBy, createdAt }]
 const oooEntries               = [];
+const xpEvents                 = [];   // [{ id, userName, points, reason, taskId, date, createdAt }]
 const clients                  = new Map();
 
 async function loadData() {
@@ -309,6 +321,16 @@ async function loadData() {
       createdAt: r.created_at.toISOString()
     }));
   } catch (err) { console.error('loadData: FAILED on idea_bank:', err.message); }
+
+  console.log('loadData: querying xp_events...');
+  try {
+    const rows = await query('SELECT * FROM xp_events ORDER BY id');
+    console.log(`loadData: xp_events OK (${rows.length} rows)`);
+    rows.forEach(r => xpEvents.push({
+      id: r.id, userName: r.user_name, points: r.points, reason: r.reason,
+      taskId: r.task_id, date: r.date, createdAt: r.created_at.toISOString()
+    }));
+  } catch (err) { console.error('loadData: FAILED on xp_events:', err.message); }
 
   console.log('loadData: querying user_sessions (last 30 days)...');
   try {
@@ -488,6 +510,116 @@ function broadcast(msg) {
   }
 }
 function broadcastAllPersonal() { broadcast({ type: 'all_personal_tasks', tasks: userTasks }); }
+function broadcastXP(highlight = null) {
+  broadcast({ type: 'xp_events', events: xpEvents, highlight });
+}
+
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function prevDayISO(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Remove any existing daily_goal / streak_bonus events for (user, date)
+// from DB and memory.
+async function clearGoalAndStreakEvents(userName, date) {
+  const rows = await query(
+    "DELETE FROM xp_events WHERE user_name=$1 AND date=$2 AND reason IN ('daily_goal','streak_bonus') RETURNING id",
+    [userName, date]
+  );
+  const removed = new Set(rows.map(r => r.id));
+  for (let i = xpEvents.length - 1; i >= 0; i--) {
+    if (removed.has(xpEvents[i].id)) xpEvents.splice(i, 1);
+  }
+}
+
+async function insertXP(userName, points, reason, taskId, date) {
+  const [row] = await query(
+    'INSERT INTO xp_events (user_name, points, reason, task_id, date) VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at',
+    [userName, points, reason, taskId, date]
+  );
+  const ev = {
+    id: row.id, userName, points, reason, taskId: taskId || null,
+    date, createdAt: row.created_at.toISOString(),
+  };
+  xpEvents.push(ev);
+  return ev;
+}
+
+// After a complete event is added/removed, recompute today's daily-goal
+// and streak-bonus events for the user. Returns total bonus points awarded
+// (for animation/highlight purposes).
+async function recomputeDailyAndStreak(userName, date) {
+  await clearGoalAndStreakEvents(userName, date);
+  const completes = xpEvents.filter(e =>
+    e.userName === userName && e.date === date && e.reason === 'complete'
+  ).length;
+  let bonusAwarded = 0;
+  if (completes >= 5) {
+    await insertXP(userName, 25, 'daily_goal', null, date);
+    bonusAwarded += 25;
+    // Streak: count consecutive previous days with a daily_goal event.
+    let streak = 1;
+    let cursor = prevDayISO(date);
+    while (xpEvents.some(e =>
+      e.userName === userName && e.date === cursor && e.reason === 'daily_goal'
+    )) {
+      streak++;
+      cursor = prevDayISO(cursor);
+    }
+    if (streak >= 2) {
+      const bonus = (streak - 1) * 5;
+      await insertXP(userName, bonus, 'streak_bonus', null, date);
+      bonusAwarded += bonus;
+    }
+  }
+  return bonusAwarded;
+}
+
+// Add a +10 complete event for (userName, taskId) on today's date and
+// recompute daily/streak. Returns { complete: 10, bonus }.
+async function awardCompletionXP(userName, taskId) {
+  const date = todayISO();
+  await insertXP(userName, 10, 'complete', taskId, date);
+  const bonus = await recomputeDailyAndStreak(userName, date);
+  return { complete: 10, bonus, date };
+}
+
+// Remove the complete event tied to taskId (if any) and recompute daily/streak
+// for the day(s) affected.
+async function revokeCompletionXP(taskId) {
+  // Find the existing complete event(s) for this task in memory first
+  // to know which (user, date) buckets we need to recompute.
+  const buckets = new Set();
+  for (const ev of xpEvents) {
+    if (ev.reason === 'complete' && ev.taskId === taskId) {
+      buckets.add(ev.userName + '|' + ev.date);
+    }
+  }
+  const rows = await query(
+    "DELETE FROM xp_events WHERE task_id=$1 AND reason='complete' RETURNING id",
+    [taskId]
+  );
+  const removed = new Set(rows.map(r => r.id));
+  for (let i = xpEvents.length - 1; i >= 0; i--) {
+    if (removed.has(xpEvents[i].id)) xpEvents.splice(i, 1);
+  }
+  for (const key of buckets) {
+    const [userName, date] = key.split('|');
+    await recomputeDailyAndStreak(userName, date);
+  }
+}
 
 // ── WebSocket handlers ─────────────────────────────────────────────────────
 wss.on('error', err => console.error('WebSocket server error:', err.message));
@@ -539,7 +671,7 @@ wss.on('connection', (ws) => {
           JSON.stringify(userTasks);
           console.log('login: all serialisations OK — sending init...');
 
-          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions, ideas, oooEntries });
+          send(ws, { type: 'init', name, teamTasks, scheduleItems, shortsLog, longFormsLog, onlineUsers: onlineUsers(), allPersonalTasks: userTasks, goals, recurringSchedule, recurringSkips, recurringTeamTasks, recurringTeamCompletions, userSessions, ideas, oooEntries, xpEvents });
           console.log('login: init sent — broadcasting presence...');
           broadcast({ type: 'presence', onlineUsers: onlineUsers(), joined: name });
           broadcast({ type: 'sessions_updated', sessions: userSessions });
@@ -598,6 +730,14 @@ wss.on('connection', (ws) => {
           await query('UPDATE personal_tasks SET done = NOT done WHERE id = $1', [msg.id]);
           t.done = !t.done;
           broadcastAllPersonal();
+          // XP: award on transition to done, revoke on transition to not-done.
+          if (t.done) {
+            const award = await awardCompletionXP(user.name, t.id);
+            broadcastXP({ userName: user.name, taskId: t.id, points: award.complete, bonus: award.bonus });
+          } else {
+            await revokeCompletionXP(t.id);
+            broadcastXP();
+          }
           break;
         }
 
@@ -607,6 +747,9 @@ wss.on('connection', (ws) => {
           await query('DELETE FROM personal_tasks WHERE id = $1 AND owner = $2', [msg.id, owner]);
           userTasks[owner] = (userTasks[owner] || []).filter(t => t.id !== msg.id);
           broadcastAllPersonal();
+          // Clean up any XP earned for this task so totals stay auditable.
+          await revokeCompletionXP(msg.id);
+          broadcastXP();
           break;
         }
 
