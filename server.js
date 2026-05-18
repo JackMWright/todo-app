@@ -489,7 +489,7 @@ async function seedRecurring() {
 }
 
 // ── Constants & helpers ────────────────────────────────────────────────────
-const ALLOWED_USERS   = ['Jack', 'Joe', 'Becca'];
+const ALLOWED_USERS   = ['Jack', 'Joe', 'Becca', 'Nico', 'Tyler'];
 const TASK_TYPES      = ['Shorts', 'Long Form', 'Graphics', 'Meetings', 'Shoots'];
 const TASK_CATEGORIES = ['Create Short', 'Edit Short', 'Create Graphic', 'Edit Long Form'];
 const GOAL_PERIODS    = ['weekly', 'monthly', 'yearly'];
@@ -1128,7 +1128,7 @@ wss.on('connection', (ws) => {
 
         case 'add_ooo': {
           if (!user) return;
-          if (!['Jack', 'Joe'].includes(user.name)) return;
+          if (!ALLOWED_USERS.includes(user.name)) return;
           const startDate = (msg.startDate || '').trim();
           const endDate   = (msg.endDate   || '').trim();
           if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return;

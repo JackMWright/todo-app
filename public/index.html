@@ -40,10 +40,16 @@
       --joe-bg:      rgba(245,158,11,.15);
       --becca:       #3B82F6;
       --becca-bg:    rgba(59,130,246,.15);
+      --nico:        #EF4444;
+      --nico-bg:     rgba(239,68,68,.15);
+      --tyler:       #22C55E;
+      --tyler-bg:    rgba(34,197,94,.15);
       /* Person pill text (softer pastels for text on glow bg) */
       --jack-text:   #d8b4fe;
       --joe-text:    #fcd34d;
       --becca-text:  #93c5fd;
+      --nico-text:   #fca5a5;
+      --tyler-text:  #86efac;
 
       /* Type accents */
       --shorts:      #06B6D4;
@@ -542,42 +548,42 @@
     .edit-cancel-btn:hover { border-color: var(--border-strong); color: var(--text); }
 
     /* ─── Schedule ──────────────────────────────────────────────────── */
-    .schedule-week { margin-bottom: 32px; }
+    .schedule-week { margin-bottom: 36px; }
     .week-heading {
       font-size: 12px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .05em;
-      color: var(--muted); margin-bottom: 12px;
+      color: var(--muted); margin-bottom: 14px;
     }
 
     .day-grid {
-      display: flex; flex-direction: column; gap: 8px;
+      display: flex; flex-direction: column; gap: 10px;
     }
 
     .day-cell {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 16px;
+      padding: 16px 18px;
       display: flex; flex-direction: row;
-      align-items: center; gap: 16px;
+      align-items: flex-start; gap: 18px;
       box-shadow: var(--shadow);
       transition: border-color .15s;
-      min-height: 64px;
+      min-height: 68px;
     }
     .day-cell:hover { border-color: var(--border-strong); }
     .day-cell.is-today { border-color: white; }
 
     .day-top {
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center;
-      width: 56px; flex-shrink: 0;
-      gap: 2px;
+      justify-content: flex-start;
+      width: 52px; flex-shrink: 0;
+      gap: 2px; padding-top: 2px;
     }
     .day-dow {
       font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
     }
-    .day-num { font-size: 20px; font-weight: 700; color: var(--text-strong); line-height: 1; }
+    .day-num { font-size: 20px; font-weight: 700; color: var(--text-strong); line-height: 1.1; }
     .day-cell.is-today .day-num {
       background: white; color: #0c1d53;
       width: 32px; height: 32px; border-radius: 50%;
@@ -586,53 +592,50 @@
     }
 
     .day-divider {
-      width: 1px; height: 32px; background: var(--border); flex-shrink: 0;
+      width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; margin: 2px 0;
     }
 
     .day-items {
-      flex: 1; display: flex; flex-direction: row;
-      flex-wrap: wrap; gap: 6px 10px;
-      align-items: center;
+      flex: 1; display: flex; flex-direction: column;
+      gap: 10px;
     }
 
     .day-cat-group {
-      display: flex; flex-direction: row; align-items: center;
-      gap: 6px; flex-wrap: wrap;
+      display: flex; flex-direction: column;
+      gap: 5px;
     }
     .day-cat-label {
-      display: inline-flex; align-items: center; gap: 4px;
+      display: inline-flex; align-items: center; gap: 5px;
       font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .05em;
+      text-transform: uppercase; letter-spacing: .06em;
       color: var(--muted);
-      white-space: nowrap; flex-shrink: 0;
+      white-space: nowrap; flex-shrink: 0; margin-bottom: 2px;
     }
     .day-cat-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
     }
-    .day-cat-sep {
-      width: 1px; height: 20px;
-      background: var(--border); flex-shrink: 0; align-self: center;
-      margin: 0 2px;
-    }
+    .day-cat-sep { display: none; }
 
     .sched-item {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 100px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 13px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-left: 3px solid rgba(255,255,255,.15);
+      border-radius: var(--radius-sm);
       animation: slideDown .15s ease;
-      white-space: nowrap;
       cursor: pointer;
       color: var(--text);
+      transition: background .15s, border-color .15s;
     }
-    /* Type tints */
-    .sched-item.type-shorts    { background: var(--shorts-bg);   border-color: var(--shorts); }
-    .sched-item.type-longform  { background: var(--longform-bg); border-color: var(--longform); }
-    .sched-item.type-graphics  { background: var(--graphics-bg); border-color: var(--graphics); }
-    .sched-item.type-meetings  { background: var(--meetings-bg); border-color: var(--meetings); }
-    .sched-item.type-shoots    { background: var(--shoots-bg);   border-color: var(--shoots); }
-    .sched-item.sched-complete { background: var(--success-bg) !important; border-color: var(--success); }
+    .sched-item:hover { background: rgba(255,255,255,.07); }
+    /* Type tints — lighter background, left-border accent */
+    .sched-item.type-shorts    { background: rgba(6,182,212,.07);   border-color: rgba(6,182,212,.15);   border-left-color: var(--shorts); }
+    .sched-item.type-longform  { background: rgba(139,92,246,.07);  border-color: rgba(139,92,246,.15);  border-left-color: var(--longform); }
+    .sched-item.type-graphics  { background: rgba(16,185,129,.07);  border-color: rgba(16,185,129,.15);  border-left-color: var(--graphics); }
+    .sched-item.type-meetings  { background: rgba(249,115,22,.07);  border-color: rgba(249,115,22,.15);  border-left-color: var(--meetings); }
+    .sched-item.type-shoots    { background: rgba(236,72,153,.07);  border-color: rgba(236,72,153,.15);  border-left-color: var(--shoots); }
+    .sched-item.sched-complete { background: rgba(34,197,94,.08) !important; border-left-color: var(--success); border-color: rgba(34,197,94,.2); }
     .sched-item.sched-complete .sched-text { color: var(--success); }
     .sched-check-icon {
       color: var(--success); font-size: 11px; font-weight: 800;
@@ -649,7 +652,7 @@
     .type-badge.graphics  { background: var(--graphics-bg); color: var(--graphics); }
     .type-badge.meetings  { background: var(--meetings-bg); color: var(--meetings); }
     .type-badge.shoots    { background: var(--shoots-bg);   color: var(--shoots); }
-    .sched-text { font-size: 12px; line-height: 1.4; color: var(--text); }
+    .sched-text { font-size: 13px; line-height: 1.4; color: var(--text); font-weight: 500; flex: 1; }
     .sched-del, .sched-edit {
       width: 16px; height: 16px; border: none; background: transparent;
       cursor: pointer; color: var(--muted); font-size: 14px;
@@ -675,6 +678,8 @@
     .sched-member.person-jack  { background: var(--jack-bg);  color: var(--jack-text);  border-color: var(--jack); }
     .sched-member.person-joe   { background: var(--joe-bg);   color: var(--joe-text);   border-color: var(--joe); }
     .sched-member.person-becca { background: var(--becca-bg); color: var(--becca-text); border-color: var(--becca); }
+    .sched-member.person-nico  { background: var(--nico-bg);  color: var(--nico-text);  border-color: var(--nico); }
+    .sched-member.person-tyler { background: var(--tyler-bg); color: var(--tyler-text); border-color: var(--tyler); }
 
     /* Member toggles in modal */
     .member-row { display: flex; gap: 10px; margin-bottom: 24px; }
@@ -693,6 +698,10 @@
     .member-toggle.on[data-person="Joe"]   { background: var(--joe-bg);   border-color: var(--joe);   color: var(--joe-text); }
     .member-toggle.on[data-member="Becca"],
     .member-toggle.on[data-person="Becca"] { background: var(--becca-bg); border-color: var(--becca); color: var(--becca-text); }
+    .member-toggle.on[data-member="Nico"],
+    .member-toggle.on[data-person="Nico"]  { background: var(--nico-bg);  border-color: var(--nico);  color: var(--nico-text); }
+    .member-toggle.on[data-member="Tyler"],
+    .member-toggle.on[data-person="Tyler"] { background: var(--tyler-bg); border-color: var(--tyler); color: var(--tyler-text); }
 
     .add-day-btn {
       flex-shrink: 0;
@@ -885,7 +894,7 @@
 
     /* ─── 3-column individual tasks ─────────────────────────────────── */
     .tasks-3col {
-      display: grid; grid-template-columns: repeat(3, 1fr);
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
       gap: 16px; align-items: start;
     }
     .person-col {
@@ -915,6 +924,10 @@
     .person-col-header.hdr-joe   .person-col-av { background: var(--joe);   color: white; }
     .person-col-header.hdr-becca { background: var(--becca-bg); border-bottom-color: var(--becca); }
     .person-col-header.hdr-becca .person-col-av { background: var(--becca); color: white; }
+    .person-col-header.hdr-nico  { background: var(--nico-bg);  border-bottom-color: var(--nico); }
+    .person-col-header.hdr-nico  .person-col-av { background: var(--nico);  color: white; }
+    .person-col-header.hdr-tyler { background: var(--tyler-bg); border-bottom-color: var(--tyler); }
+    .person-col-header.hdr-tyler .person-col-av { background: var(--tyler); color: white; }
     .person-col-av {
       width: 28px; height: 28px; border-radius: 50%;
       font-size: 11px; font-weight: 800;
@@ -1230,6 +1243,8 @@
     .month-event.person-jack  { background: var(--jack-bg);  border-left-color: var(--jack); }
     .month-event.person-joe   { background: var(--joe-bg);   border-left-color: var(--joe); }
     .month-event.person-becca { background: var(--becca-bg); border-left-color: var(--becca); }
+    .month-event.person-nico  { background: var(--nico-bg);  border-left-color: var(--nico); }
+    .month-event.person-tyler { background: var(--tyler-bg); border-left-color: var(--tyler); }
     .month-event.type-shorts    { background: var(--shorts-bg);   border-left-color: var(--shorts); }
     .month-event.type-longform  { background: var(--longform-bg); border-left-color: var(--longform); }
     .month-event.type-graphics  { background: var(--graphics-bg); border-left-color: var(--graphics); }
@@ -1241,9 +1256,11 @@
     }
 
     /* Person-tinted week-view pill (single-member events) */
-    .sched-item.person-jack  { background: var(--jack-bg);  border-color: var(--jack); }
-    .sched-item.person-joe   { background: var(--joe-bg);   border-color: var(--joe); }
-    .sched-item.person-becca { background: var(--becca-bg); border-color: var(--becca); }
+    .sched-item.person-jack  { background: rgba(168,85,247,.07);  border-left-color: var(--jack);  border-color: rgba(168,85,247,.15); }
+    .sched-item.person-joe   { background: rgba(245,158,11,.07);  border-left-color: var(--joe);   border-color: rgba(245,158,11,.15); }
+    .sched-item.person-becca { background: rgba(59,130,246,.07);  border-left-color: var(--becca); border-color: rgba(59,130,246,.15); }
+    .sched-item.person-nico  { background: rgba(239,68,68,.07);   border-left-color: var(--nico);  border-color: rgba(239,68,68,.15); }
+    .sched-item.person-tyler { background: rgba(34,197,94,.07);   border-left-color: var(--tyler); border-color: rgba(34,197,94,.15); }
 
     /* Recurring indicator */
     .recurring-badge {
@@ -1328,7 +1345,7 @@
       color: var(--muted); margin-bottom: 12px;
     }
     .tt-status-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;
     }
     .tt-status-card {
       background: var(--card);
@@ -1349,6 +1366,8 @@
     .tt-status-card.status-jack  { border-left-color: var(--jack);  --glow: var(--jack-bg); }
     .tt-status-card.status-joe   { border-left-color: var(--joe);   --glow: var(--joe-bg); }
     .tt-status-card.status-becca { border-left-color: var(--becca); --glow: var(--becca-bg); }
+    .tt-status-card.status-nico  { border-left-color: var(--nico);  --glow: var(--nico-bg); }
+    .tt-status-card.status-tyler { border-left-color: var(--tyler); --glow: var(--tyler-bg); }
     .tt-status-dot {
       width: 10px; height: 10px; border-radius: 50%;
       background: rgba(255,255,255,.25); flex-shrink: 0;
@@ -1393,6 +1412,8 @@
     .tt-week-name.person-jack  { color: var(--jack); }
     .tt-week-name.person-joe   { color: var(--joe); }
     .tt-week-name.person-becca { color: var(--becca); }
+    .tt-week-name.person-nico  { color: var(--nico); }
+    .tt-week-name.person-tyler { color: var(--tyler); }
     .tt-week-bars {
       flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
     }
@@ -1416,6 +1437,8 @@
     .tt-bar.person-jack  { background: var(--jack);  box-shadow: 0 0 12px var(--jack-bg); }
     .tt-bar.person-joe   { background: var(--joe);   box-shadow: 0 0 12px var(--joe-bg); }
     .tt-bar.person-becca { background: var(--becca); box-shadow: 0 0 12px var(--becca-bg); }
+    .tt-bar.person-nico  { background: var(--nico);  box-shadow: 0 0 12px var(--nico-bg); }
+    .tt-bar.person-tyler { background: var(--tyler); box-shadow: 0 0 12px var(--tyler-bg); }
     .tt-bar.is-today { outline: 1px solid white; outline-offset: -1px; }
     .tt-day-label {
       font-size: 10px; font-weight: 700;
@@ -1573,6 +1596,8 @@
     .idea-by-av.person-jack  { background: var(--jack-bg);  color: var(--jack-text);  border-color: var(--jack); }
     .idea-by-av.person-joe   { background: var(--joe-bg);   color: var(--joe-text);   border-color: var(--joe); }
     .idea-by-av.person-becca { background: var(--becca-bg); color: var(--becca-text); border-color: var(--becca); }
+    .idea-by-av.person-nico  { background: var(--nico-bg);  color: var(--nico-text);  border-color: var(--nico); }
+    .idea-by-av.person-tyler { background: var(--tyler-bg); color: var(--tyler-text); border-color: var(--tyler); }
     .idea-date { margin-left: auto; font-weight: 600; }
 
     .idea-empty {
@@ -1720,7 +1745,8 @@
       .brand-logo { height: 40px; }
       .tab-bar { padding: 6px 12px; }
       .day-cell { flex-wrap: wrap; padding: 14px; }
-      .tasks-3col, .goals-grid, .xp-leaderboard { grid-template-columns: 1fr; }
+      .tasks-3col { grid-template-columns: 1fr; }
+      .goals-grid, .xp-leaderboard { grid-template-columns: 1fr; }
       .panel-title { font-size: 22px; }
       .modal { padding: 24px 20px; }
       .month-cell { min-height: 70px; padding: 4px; gap: 2px; }
@@ -1846,6 +1872,20 @@
           <span class="user-btn-label">Team member</span>
         </div>
       </button>
+      <button class="user-btn" onclick="login('Nico')">
+        <div class="user-av" style="background:var(--nico-bg);color:var(--nico-text);border-color:var(--nico)">NC</div>
+        <div class="user-btn-info">
+          <span class="user-btn-name">Nico</span>
+          <span class="user-btn-label">Team member</span>
+        </div>
+      </button>
+      <button class="user-btn" onclick="login('Tyler')">
+        <div class="user-av" style="background:var(--tyler-bg);color:var(--tyler-text);border-color:var(--tyler)">TY</div>
+        <div class="user-btn-info">
+          <span class="user-btn-name">Tyler</span>
+          <span class="user-btn-label">Team member</span>
+        </div>
+      </button>
     </div>
   </div>
 </div>
@@ -1913,6 +1953,8 @@
                 <option value="Jack">Jack</option>
                 <option value="Joe">Joe</option>
                 <option value="Becca">Becca</option>
+                <option value="Nico">Nico</option>
+                <option value="Tyler">Tyler</option>
               </select>
             </div>
             <button type="submit" class="btn-primary">Add Task</button>
@@ -2158,6 +2200,8 @@
       <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleMember('Jack')">JW</button>
       <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleMember('Joe')">JF</button>
       <button type="button" class="member-toggle" data-member="Becca" onclick="toggleMember('Becca')">BS</button>
+      <button type="button" class="member-toggle" data-member="Nico"  onclick="toggleMember('Nico')">NC</button>
+      <button type="button" class="member-toggle" data-member="Tyler" onclick="toggleMember('Tyler')">TY</button>
     </div>
     <div class="modal-recurring-row" id="modal-recurring-row" style="display:none">
       <span>Recurring:</span>
@@ -2189,6 +2233,8 @@
       <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleShortMember('Jack')">JW</button>
       <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleShortMember('Joe')">JF</button>
       <button type="button" class="member-toggle" data-member="Becca" onclick="toggleShortMember('Becca')">BS</button>
+      <button type="button" class="member-toggle" data-member="Nico"  onclick="toggleShortMember('Nico')">NC</button>
+      <button type="button" class="member-toggle" data-member="Tyler" onclick="toggleShortMember('Tyler')">TY</button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-ghost"   onclick="closeShortDetail()">Cancel</button>
@@ -2212,6 +2258,8 @@
       <button type="button" class="member-toggle" data-member="Jack"  onclick="toggleLongFormMember('Jack')">JW</button>
       <button type="button" class="member-toggle" data-member="Joe"   onclick="toggleLongFormMember('Joe')">JF</button>
       <button type="button" class="member-toggle" data-member="Becca" onclick="toggleLongFormMember('Becca')">BS</button>
+      <button type="button" class="member-toggle" data-member="Nico"  onclick="toggleLongFormMember('Nico')">NC</button>
+      <button type="button" class="member-toggle" data-member="Tyler" onclick="toggleLongFormMember('Tyler')">TY</button>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-ghost"   onclick="closeLongFormDetail()">Cancel</button>
@@ -2642,10 +2690,10 @@
       nav.appendChild(nextBtn);
     }
 
-    // ── Build 3-column section ───────────────────────────────────────────
-    const PEOPLE    = ['Jack', 'Joe', 'Becca'];
-    const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca' };
-    const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+    // ── Build person columns ─────────────────────────────────────────────
+    const PEOPLE    = ['Jack', 'Joe', 'Becca', 'Nico', 'Tyler'];
+    const HDR_CLASS = { Jack: 'hdr-jack', Joe: 'hdr-joe', Becca: 'hdr-becca', Nico: 'hdr-nico', Tyler: 'hdr-tyler' };
+    const INITIALS  = { Jack: 'JW', Joe: 'JF', Becca: 'BS', Nico: 'NC', Tyler: 'TY' };
 
     const grid = document.getElementById('tasks-3col-grid');
     if (!grid) return;
@@ -3287,7 +3335,7 @@
         items.className = 'day-items';
 
         // OOO indicators — shown first so they're always visible
-        const oooForDay = ['Jack', 'Joe'].filter(p => isOOO(p, iso));
+        const oooForDay = ['Jack', 'Joe', 'Becca', 'Nico', 'Tyler'].filter(p => isOOO(p, iso));
         if (oooForDay.length) {
           const oooGroup = document.createElement('div');
           oooGroup.className = 'ooo-day-group';
@@ -3380,7 +3428,7 @@
     }
   }
 
-  const MEMBER_INITIALS = { Jack: 'JW', Joe: 'JF', Becca: 'BS' };
+  const MEMBER_INITIALS = { Jack: 'JW', Joe: 'JF', Becca: 'BS', Nico: 'NC', Tyler: 'TY' };
   function personClass(name) { return 'person-' + name.toLowerCase(); }
 
   function makeSchedItem(item) {
@@ -4069,7 +4117,7 @@
   }
 
   // ── Time Tracking ─────────────────────────────────────────────────────
-  const TT_USERS = ['Jack', 'Joe', 'Becca'];
+  const TT_USERS = ['Jack', 'Joe', 'Becca', 'Nico', 'Tyler'];
   const TT_DOW   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
   // Format a Date (or ISO string) as 'YYYY-MM-DD' in EST (America/New_York)
@@ -4482,6 +4530,9 @@
         case 'team_tasks':      renderTeam(msg.tasks); break;
         case 'schedule_items':
           schedItems = msg.items;
+          // Re-render individual tasks too — schedItems affects which personal tasks
+          // are promoted into the dated section via schedLinkedTexts matching
+          renderAllPersonal(allPersonalTasks);
           if (activeTab === 'schedule') buildSchedule();
           break;
         case 'recurring_schedule':
@@ -4554,7 +4605,7 @@
     const assigneeEl = document.getElementById('personal-assignee');
     if (assigneeEl) assigneeEl.value = name;
     setupIdleDetection();
-    document.getElementById('ooo-manage-card').style.display = (name === 'Jack' || name === 'Joe') ? 'flex' : 'none';
+    document.getElementById('ooo-manage-card').style.display = 'flex';
     connect();
   }
 </script>
